@@ -28,6 +28,19 @@ Install globally for a specific agent:
 npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 ```
 
+## OpenCode commands
+
+This repository also includes project command templates in `.opencode/commands/`.
+
+| Command | Agent | Workflow |
+|---------|-------|----------|
+| `/spec` | `build` | `caveman` + `ponytail`; `grill-with-docs` → `domain-modeling` → `to-spec` |
+| `/plan` | `build` | `caveman` + `ponytail`; `writing-plans` from a spec |
+| `/build` | `build` | `caveman` + `ponytail`; `implement` with incremental TDD discipline |
+| `/review` | `build` | `caveman`; `code-review-and-quality` → `security-and-hardening` → `performance-optimization` → `code-simplification` → `explain-diff-html` |
+
+All four commands use `agent: build` so they can create docs, reports, commits, or code when the workflow requires it.
+
 ## Available skills
 
 ### Productivity
