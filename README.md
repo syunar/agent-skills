@@ -48,6 +48,8 @@ npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 |-------|-------------|
 | **writing-plans** | Create bite-sized implementation plans from specs or requirements |
 | **tdd** | Test-driven development — red-green-refactor cycle with test quality guidance |
+| **test-driven-development** | Test-driven development — write failing tests first, prove-it pattern for bugs, test pyramid guidance |
+| **incremental-implementation** | Build in thin vertical slices with individual test-verify-commit per increment |
 | **codebase-design** | Shared vocabulary for designing deep modules with depth, seams, and leverage |
 | **improve-codebase-architecture** | Scan codebase for deepening opportunities, present as HTML report, then grill through each |
 | **domain-modeling** | Build and sharpen a project's domain model — glossary and ADRs |

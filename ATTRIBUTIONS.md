@@ -54,3 +54,11 @@ Source: https://github.com/thananon/9arm-skills
 
 Adapted skills:
 - **scrutinize** — based on `skills/engineering/scrutinize/SKILL.md`
+
+## addyosmani/agent-skills (MIT)
+
+Source: https://github.com/addyosmani/agent-skills
+
+Adapted skills:
+- **incremental-implementation** — based on `skills/incremental-implementation/SKILL.md`
+- **test-driven-development** — based on `skills/test-driven-development/SKILL.md`
