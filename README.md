@@ -55,7 +55,11 @@ npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 | **domain-modeling** | Build and sharpen a project's domain model — glossary and ADRs |
 | **implement** | Implement work from a spec or tickets using tdd and code-review |
 | **code-review** | Two-axis review (standards + spec) using parallel sub-agents |
+| **code-review-and-quality** | Multi-axis review across correctness, readability, architecture, security, and performance |
 | **scrutinize** | Outsider-perspective end-to-end review of plans, PRs, diffs, and designs |
+| **code-simplification** | Simplify code for clarity while preserving exact behavior |
+| **security-and-hardening** | Security-first practices — input validation, auth, SSRF, secrets, LLM safety |
+| **performance-optimization** | Measure-first optimization for frontend, backend, queries, and Core Web Vitals |
 | **explain-diff-html** | Produce a rich, interactive HTML explanation of any code change |
 
 ## License

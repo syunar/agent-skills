@@ -62,3 +62,7 @@ Source: https://github.com/addyosmani/agent-skills
 Adapted skills:
 - **incremental-implementation** — based on `skills/incremental-implementation/SKILL.md`
 - **test-driven-development** — based on `skills/test-driven-development/SKILL.md`
+- **code-simplification** — based on `skills/code-simplification/SKILL.md`
+- **code-review-and-quality** — based on `skills/code-review-and-quality/SKILL.md`
+- **security-and-hardening** — based on `skills/security-and-hardening/SKILL.md`
+- **performance-optimization** — based on `skills/performance-optimization/SKILL.md`
