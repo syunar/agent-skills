@@ -38,6 +38,7 @@ This repository also includes project command templates in `.opencode/commands/`
 | `/plan` | `build` | `caveman` + `ponytail`; `writing-plans` from a spec |
 | `/build` | `build` | `caveman` + `ponytail`; `implement` with incremental TDD discipline |
 | `/review` | `build` | `caveman`; `code-review-and-quality` → `security-and-hardening` → `performance-optimization` → `code-simplification` → `explain-diff-html` |
+| `/feedback` | `build` | `caveman`; process PR review comments, apply fixes, commit, push to existing PR branch |
 
 All four commands use `agent: build` so they can create docs, reports, commits, or code when the workflow requires it.
 
