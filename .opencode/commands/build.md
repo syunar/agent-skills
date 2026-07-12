@@ -15,10 +15,9 @@ Workflow:
 4. Implement in small vertical slices. Keep each slice working, testable, and rollback-friendly.
 5. Use TDD where practical: write or identify the failing test, make it pass, then refactor.
 6. Run focused verification after each meaningful slice and the broader verification at the end.
-7. Before committing, do a lightweight self-review: compare changes against the plan/spec, confirm tests prove the intended behavior, check for obvious bugs, dead code, unrelated edits, and scope creep, and apply `ponytail` to remove unnecessary abstraction or complexity. Fix clear issues inline. Do not run the full `/review` pipeline unless the user asks.
-8. Use `code-review` after implementation to review the work.
-9. Commit verified work to the current branch unless the user explicitly says not to commit.
-10. After all slices are complete, push the current branch and create a pull request. If the branch name doesn't describe the change, ask before pushing. Use `gh pr create` to create the PR with a title derived from the plan/spec.
+7. Use `code-review` after implementation to review the work.
+8. Commit verified work to the current branch unless the user explicitly says not to commit.
+9. After all slices are complete, push the current branch and create a pull request. If the branch name doesn't describe the change, ask before pushing. Use `gh pr create` to create the PR with a title derived from the plan/spec.
 
 User input:
 
