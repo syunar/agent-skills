@@ -75,6 +75,7 @@ All four commands use `agent: build` so they can create docs, reports, commits, 
 | **security-and-hardening** | Security-first practices — input validation, auth, SSRF, secrets, LLM safety |
 | **performance-optimization** | Measure-first optimization for frontend, backend, queries, and Core Web Vitals |
 | **explain-diff-html** | Produce a rich, interactive HTML explanation of any code change |
+| **design-python-backend-architecture** | Design or review a thin, feature-first Python modular monolith |
 
 ## License
 
