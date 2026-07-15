@@ -1,7 +1,7 @@
 ---
 description: Fast, read-only codebase discovery for bounded repository questions.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 permission:
   edit: deny
 ---

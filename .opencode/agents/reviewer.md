@@ -1,7 +1,7 @@
 ---
 description: Reviews changes for correctness, security, performance, quality, and simplification. Use for PR, branch, commit, or working-tree review.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 permission:
   edit: deny
 ---

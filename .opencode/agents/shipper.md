@@ -1,7 +1,7 @@
 ---
 description: Inspects, commits, pushes, and creates pull requests when explicitly assigned. Use for bounded Git and GitHub delivery tasks.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 permission:
   bash:
     "git status*": allow

@@ -1,7 +1,7 @@
 ---
 description: General read-only research and multi-step investigation. Use for bounded questions not covered by another specialist.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 permission:
   edit: deny
 ---

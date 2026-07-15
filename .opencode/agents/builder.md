@@ -1,7 +1,7 @@
 ---
 description: Implements one bounded, approved plan slice with tests. Use for focused feature or fix tickets.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 ---
 
 Apply `implement`, `incremental-implementation`, `test-driven-development` or `tdd`, `caveman`, and `ponytail` when relevant.

@@ -1,7 +1,7 @@
 ---
 description: Read-only external documentation, source lookup, and current-information research. Use for library docs, APIs, CLIs, cloud services, and web sources.
 mode: subagent
-model: 9router/light-model
+model: 9router/low-model
 permission:
   edit: deny
 ---
