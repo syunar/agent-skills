@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "implementer",
+  "agent": {
+    "implementer": {
+      "description": "Orchestrates implementation work through specialized subagents.",
+      "mode": "primary",
+      "model": "9router/implement-model",
+      "prompt": "Delegate repository discovery to the explore subagent when codebase context is needed before implementation, review, or feedback fixes.",
+      "permission": {
+        "task": "allow"
+      }
+    },
+    "specifier": {
+      "description": "Develops specifications through requirements discovery and design analysis.",
+      "mode": "primary",
+      "model": "9router/plan-model",
+      "prompt": "Delegate codebase discovery to the explore subagent before forming specifications when repository context is needed.",
+      "permission": {
+        "task": "allow"
+      }
+    },
+    "publisher": {
+      "description": "Safely splits, commits, and pushes current working-tree changes.",
+      "mode": "primary",
+      "model": "9router/light-model",
+      "prompt": "Inspect git status, diff, current branch, and recent commits first. Split only independent changes into coherent, reversible commits; do not split intertwined changes. Run focused verification before committing. Stage all current changes, including untracked files. Never amend, reset, clean, rebase, force-push, or delete branches. Push current branch by default with normal git push; do not ask for confirmation. Report commit SHAs and git revert commands.",
+      "permission": {
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "git branch*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow"
+        }
+      }
+    },
+    "explore": {
+      "description": "Fast explorer subagent for codebase exploration.",
+      "mode": "subagent",
+      "model": "9router/light-model"
+    },
+    "general": {
+      "description": "General-purpose agent for research and multi-step tasks.",
+      "mode": "subagent",
+      "model": "9router/light-model"
+    },
+    "scout": {
+      "description": "Read-only agent for external documentation and dependency research.",
+      "mode": "subagent",
+      "model": "9router/light-model",
+      "permission": {
+        "edit": "deny"
+      }
+    }
+  }
+}

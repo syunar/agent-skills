@@ -1,6 +1,6 @@
 ---
 description: Address PR review feedback, commit fixes, and push to the existing PR branch
-agent: build
+agent: implementer
 ---
 
 Apply the `caveman` skill for concise communication throughout this command.
@@ -14,6 +14,7 @@ Workflow:
 5. After all fixes are applied, run verification (tests, build, typecheck).
 6. Commit fixes to the current branch with messages that reference each piece of feedback.
 7. Push to the existing PR branch.
-8. Optionally leave a `gh pr comment` summarizing what was addressed.
+8. For GitHub operations, use the `gh` CLI. Use high-level `gh` commands first; use `gh api` only when no suitable command exists. Do not use browser automation or manual web actions.
+9. Optionally leave a `gh pr comment` summarizing what was addressed.
 
 Do not change behavior outside the scope of the feedback unless it is a direct dependency. Do not use `ponytail` — address feedback thoroughly.

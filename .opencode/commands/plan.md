@@ -1,6 +1,6 @@
 ---
 description: Turn a spec into a bite-sized implementation plan
-agent: build
+agent: specifier
 ---
 
 Apply the `caveman` skill for concise communication and the `ponytail` skill for simplest-viable scope throughout this command.
@@ -15,7 +15,8 @@ Workflow:
 4. Save the plan to `docs/plans/YYYY-MM-DD-<feature-name>.md` unless the user asks for a different path.
 5. Make the plan executable by a fresh engineer: exact files, exact test commands, expected outcomes, no placeholders.
 6. Do not implement the plan.
-7. End by reporting the saved plan path and asking whether the user wants to run `/build` next.
+7. For GitHub operations, use the `gh` CLI. Use high-level `gh` commands first; use `gh api` only when no suitable command exists. Do not use browser automation or manual web actions.
+8. End by reporting the saved plan path and asking whether the user wants to run `/build` next.
 
 User input:
 

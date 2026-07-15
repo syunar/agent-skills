@@ -1,6 +1,6 @@
 ---
 description: Implement a plan or spec incrementally with tests
-agent: build
+agent: implementer
 ---
 
 Apply the `caveman` skill for concise communication and the `ponytail` skill for simplest-viable implementation throughout this command.
@@ -17,7 +17,8 @@ Workflow:
 6. Run focused verification after each meaningful slice and the broader verification at the end.
 7. Use `code-review` after implementation to review the work.
 8. Commit verified work to the current branch unless the user explicitly says not to commit.
-9. After all slices are complete, push the current branch and create a pull request. If the branch name doesn't describe the change, ask before pushing. Use `gh pr create` to create the PR with a title derived from the plan/spec.
+9. For GitHub operations, use the `gh` CLI. Use high-level `gh` commands first; use `gh api` only when no suitable command exists. Do not use browser automation or manual web actions.
+10. After all slices are complete, push the current branch and create a pull request. If the branch name doesn't describe the change, ask before pushing. Use `gh pr create` to create the PR with a title derived from the plan/spec.
 
 User input:
 

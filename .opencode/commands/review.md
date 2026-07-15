@@ -1,6 +1,6 @@
 ---
 description: Run a full quality, security, performance, simplification, and HTML review
-agent: build
+agent: implementer
 ---
 
 Apply the `caveman` skill for concise communication throughout this command. Do not apply `ponytail`; review should be thorough, not minimal.
@@ -19,9 +19,10 @@ Workflow:
 2. If no argument is provided, review the current working tree diff and recent commits against the current branch.
 3. Inspect the real code paths, not only the diff.
 4. Do not modify source code unless the user explicitly asks for fixes. Writing a review report is allowed.
-5. Order findings by severity and include concrete file/line references where possible.
-6. Save the HTML report under `docs/reviews/YYYY-MM-DD-<review-slug>.html` unless the user asks for a different path.
-7. End with a concise verdict: ship, fix-then-ship, rework, or reject.
+5. For GitHub operations, use the `gh` CLI. Use high-level `gh` commands first; use `gh api` only when no suitable command exists. Do not use browser automation or manual web actions.
+6. Order findings by severity and include concrete file/line references where possible.
+7. Save the HTML report under `docs/reviews/YYYY-MM-DD-<review-slug>.html` unless the user asks for a different path.
+8. End with a concise verdict: ship, fix-then-ship, rework, or reject.
 
 User input:
 
