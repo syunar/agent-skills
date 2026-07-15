@@ -6,7 +6,7 @@
       "description": "Orchestrates implementation work through specialized subagents.",
       "mode": "primary",
       "model": "9router/implement-model",
-      "prompt": "Delegate repository discovery to the explore subagent when codebase context is needed before implementation, review, or feedback fixes.",
+      "prompt": "Delegate repository discovery to explore whenever codebase context is needed. Delegate any task needing external search, source lookup, current information, documentation research, or web exploration to scout before answering. Main agent synthesizes subagent findings; use direct lookup only when delegation cannot answer.",
       "permission": {
         "task": "allow"
       }
