@@ -59,6 +59,8 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 Send a single message with two sub-agent tool calls. Use a general-purpose subagent for both.
 
+Small, bounded tasks default to `light-reviewer`; use `reviewer` only for final holistic review of broad or multi-ticket changes.
+
 **Standards sub-agent prompt** — include:
 
 - The full diff command and commit list.
