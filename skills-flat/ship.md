@@ -8,10 +8,11 @@ description: Use /ship for the final review, verification, commit, push, and pul
 Treat invocation arguments as the delivery target and preserve explicit user
 constraints.
 
-Load and follow `code-review-and-quality`. Inspect the full diff and repository
-state. Require all available tests, typechecks, builds, and runtime verification
-to pass. Report skipped checks and blockers plainly; do not ship with unresolved
-required findings.
+Delegate an independent final review of the full diff and repository state to
+the `code-reviewer` subagent when available; otherwise load and follow
+`code-review-and-quality` directly. Require all available tests, typechecks,
+builds, and runtime verification to pass. Report skipped checks and blockers
+plainly; do not ship with unresolved Critical or Important findings.
 
 Load and follow `caveman-commit` to prepare the commit message. Ask for explicit
 confirmation immediately before creating the commit. Do not amend unless the

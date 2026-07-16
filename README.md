@@ -28,6 +28,18 @@ Install globally for a specific agent:
 npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 ```
 
+## Claude Code agents
+
+Project custom agents live in `.claude/agents/*.md`.
+
+| Agent | Role |
+|-------|------|
+| `code-reviewer` | Read-only five-axis review for a change, diff, or pull request |
+
+Ask Claude Code to use the `code-reviewer` subagent, or start a session with
+`claude --agent code-reviewer`. The `/review` and `/ship` workflow skills
+delegate their review pass to this agent.
+
 ## OpenCode agents
 
 `.opencode/commands/` is empty. Workflow comes from `.opencode/agents/*.md`.
