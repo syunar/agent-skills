@@ -57,9 +57,9 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
-Send a single message with two sub-agent tool calls. Use a general-purpose subagent for both.
+Send a single message with two sub-agent tool calls. Use general-purpose subagent for both.
 
-Small, bounded tasks default to `light-reviewer`; use `reviewer` only for final holistic review of broad or multi-ticket changes.
+Small, bounded tasks default to `fast-reviewer`; use `reviewer` only for final holistic review of broad or multi-ticket changes.
 
 **Standards sub-agent prompt** — include:
 

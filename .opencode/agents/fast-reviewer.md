@@ -1,7 +1,7 @@
 ---
 description: Read-only review for small, bounded changes.
 mode: subagent
-model: 9router/light-model
+model: 9router/fast-review
 permission:
   edit: deny
 ---

@@ -28,19 +28,26 @@ Install globally for a specific agent:
 npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 ```
 
-## OpenCode commands
+## OpenCode agents
 
-This repository also includes project command templates in `.opencode/commands/`.
+`.opencode/commands/` is empty. Workflow comes from `.opencode/agents/*.md`.
 
-| Command | Agent | Workflow |
-|---------|-------|----------|
-| `/spec` | `build` | `caveman` + `ponytail`; `grill-with-docs` → `domain-modeling` → `to-spec` |
-| `/plan` | `build` | `caveman` + `ponytail`; `writing-plans` from a spec |
-| `/build` | `build` | `caveman` + `ponytail`; `implement` with incremental TDD discipline |
-| `/review` | `build` | `caveman`; `code-review-and-quality` → `security-and-hardening` → `performance-optimization` → `code-simplification` → `explain-diff-html` |
-| `/feedback` | `build` | `caveman`; process PR review comments, apply fixes, commit, push to existing PR branch |
+`opencode.json` sets `default_agent` to `marcus`.
 
-All four commands use `agent: build` so they can create docs, reports, commits, or code when the workflow requires it.
+| File | Mode | Role |
+|------|------|------|
+| `marcus.md` | `primary` | Orchestrates feature and fix work through subagents |
+| `sophia.md` | `primary` | Orchestrates specs and plans |
+| `builder.md` | `subagent` | Focused implementation slices with tests |
+| `documentation-researcher.md` | `subagent` | Read-only docs, source lookup, current-info research |
+| `explorer.md` | `subagent` | Read-only repo discovery |
+| `fast-reviewer.md` | `subagent` | Read-only review for small bounded changes |
+| `feedback-responder.md` | `subagent` | Addresses bounded PR review feedback |
+| `researcher.md` | `subagent` | General read-only research |
+| `reviewer.md` | `subagent` | Final holistic review |
+| `shipper.md` | `subagent` | Git and GitHub delivery tasks |
+
+No `/spec`, `/plan`, `/build`, `/review`, or `/feedback` slash-command templates exist in repo.
 
 ## Available skills
 
