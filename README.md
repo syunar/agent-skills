@@ -47,9 +47,29 @@ npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 | `reviewer.md` | `subagent` | Final holistic review |
 | `shipper.md` | `subagent` | Git and GitHub delivery tasks |
 
-No `/spec`, `/plan`, `/build`, `/review`, or `/feedback` slash-command templates exist in repo.
+Project workflow commands compose the reusable skills below:
+
+| Command | Workflow |
+|---------|----------|
+| `/spec` | Grill with docs, confirm shared understanding, then write a dated spec |
+| `/plan` | Turn a spec or requirements into an executable implementation plan |
+| `/build` | Implement incrementally with tests, verification, and review |
+| `/review` | Review quality, security, performance, and simplicity without fixes |
+| `/fix` | Apply verified fixes with regression coverage and re-verification |
+| `/ship` | Run final gates, then confirm commit and external delivery separately |
 
 ## Available skills
+
+### Workflow
+
+| Skill | Description |
+|-------|-------------|
+| **spec** | `/spec` workflow: documented grilling followed by dated spec synthesis |
+| **plan** | `/plan` workflow: executable planning from a spec or requirements |
+| **build** | `/build` workflow: incremental implementation with tests and review |
+| **review** | `/review` workflow: read-only quality, security, performance, and simplicity review |
+| **fix** | `/fix` workflow: verified fixes with regression coverage and re-verification |
+| **ship** | `/ship` workflow: final gates and confirmed delivery actions |
 
 ### Productivity
 
