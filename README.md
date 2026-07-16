@@ -28,11 +28,13 @@ Install globally for a specific agent:
 npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
 ```
 
-## OpenCode agents
+## Custom agents
 
-`.opencode/commands/` is empty. Workflow comes from `.opencode/agents/*.md`.
+OpenCode workflow comes from `.opencode/agents/*.md`; `opencode.json` sets `default_agent` to `marcus`.
 
-`opencode.json` sets `default_agent` to `marcus`.
+Claude Code equivalents live in `.claude/agents/*.md`. `.claude/settings.json` starts normal project sessions as `marcus`. Use `claude --agent sophia` for a dedicated spec/plan session, or `@agent-<name>` to invoke any specialist.
+
+Both agent sets stay supported.
 
 | File | Mode | Role |
 |------|------|------|
