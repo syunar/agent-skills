@@ -40,25 +40,6 @@ Ask Claude Code to use the `code-reviewer` subagent, or start a session with
 `claude --agent code-reviewer`. The `/review` and `/ship` workflow skills
 delegate their review pass to this agent.
 
-## OpenCode agents
-
-`.opencode/commands/` is empty. Workflow comes from `.opencode/agents/*.md`.
-
-`opencode.json` sets `default_agent` to `marcus`.
-
-| File | Mode | Role |
-|------|------|------|
-| `marcus.md` | `primary` | Orchestrates feature and fix work through subagents |
-| `sophia.md` | `primary` | Orchestrates specs and plans |
-| `builder.md` | `subagent` | Focused implementation slices with tests |
-| `documentation-researcher.md` | `subagent` | Read-only docs, source lookup, current-info research |
-| `explorer.md` | `subagent` | Read-only repo discovery |
-| `fast-reviewer.md` | `subagent` | Read-only review for small bounded changes |
-| `feedback-responder.md` | `subagent` | Addresses bounded PR review feedback |
-| `researcher.md` | `subagent` | General read-only research |
-| `reviewer.md` | `subagent` | Final holistic review |
-| `shipper.md` | `subagent` | Git and GitHub delivery tasks |
-
 Project workflow commands compose the reusable skills below:
 
 | Command | Workflow |
@@ -71,6 +52,18 @@ Project workflow commands compose the reusable skills below:
 | `/ship` | Run final gates, then confirm commit and external delivery separately |
 
 ## Available skills
+
+### Claude Code agents
+
+Project custom agents live in `.claude/agents/*.md`.
+
+| Agent | Role |
+|-------|------|
+| `code-reviewer` | Read-only five-axis review for a change, diff, or pull request |
+
+Ask Claude Code to use the `code-reviewer` subagent, or start a session with
+`claude --agent code-reviewer`. The `/review` and `/ship` workflow skills
+delegate their review pass to this agent.
 
 ### Workflow
 
