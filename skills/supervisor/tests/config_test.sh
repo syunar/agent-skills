@@ -523,7 +523,7 @@ test_plan_helper_without_heading() {
     MOCK_OPENCODE_CONFIG="$fixture" \
     MOCK_GH_TITLE="No Heading Ticket" \
     MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"Just freeform content without a heading."}}]}' \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  Some content without heading.\n\nWith trailing newlines.\n\n"}}]}' \
       "$bash_bin" "$plan_script" \
         "https://github.com/acme/example/issues/99"
   )
@@ -539,10 +539,13 @@ test_plan_helper_without_heading() {
     fail "plan helper should write the file even without a heading"
   fi
 
+  raw_plan=$(cat "$plan_path"; printf x)
+  raw_plan=${raw_plan%x}
+
   assert_equal \
-    "Just freeform content without a heading." \
-    "$(<"$plan_path")" \
-    "plan helper should save content verbatim without heading"
+    $'  Some content without heading.\n\nWith trailing newlines.\n\n\n' \
+    "$raw_plan" \
+    "plan helper should save content verbatim with leading/trailing whitespace"
 
   pass "plan helper succeeds without an Implementation Plan heading"
 }
