@@ -60,6 +60,8 @@ When the `opencode` command is unavailable, the helper falls back to the JSON fi
 
 ## 2. Request and save the review
 
+**CRITICAL: When using a Bash tool to run this helper, set its timeout to at least 2,100,000 milliseconds (35 minutes). The supervisor request can take 20–30 minutes.**
+
 Run the bundled helper from the repository root.
 
 By default, the review is saved locally and posted as a comment-level PR review:
