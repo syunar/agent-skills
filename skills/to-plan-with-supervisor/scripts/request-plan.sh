@@ -75,8 +75,8 @@ request=$(jq -n \
   --arg prompt "$prompt" \
   '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
 
-printf 'API URL: %s\nAPI key: ****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
-  "$API_URL" "$MODEL" "$plan_path" "$prompt" >&2
+printf 'API URL: %s\nAPI key: %s****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
+  "$API_URL" "${API_KEY:0:4}" "$MODEL" "$plan_path" "$prompt" >&2
 
 request_started_at=$SECONDS
 if ! response=$(curl -sS --fail-with-body \

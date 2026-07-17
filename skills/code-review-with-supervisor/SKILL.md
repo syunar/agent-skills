@@ -10,7 +10,7 @@ Delegate a pull-request review to the supervisor model, then save its Markdown r
 
 ## 1. Validate the references
 
-Treat the first invocation argument as the originating public GitHub issue URL and the second as the public GitHub pull-request URL.
+The first argument is the originating public GitHub issue URL (optional); the second is the public GitHub pull-request URL.
 
 Expected forms:
 
@@ -19,7 +19,7 @@ https://github.com/<owner>/<repo>/issues/<number>
 https://github.com/<owner>/<repo>/pull/<number>
 ```
 
-If either reference is missing or malformed, ask for both URLs. The supervisor resolves `@github` and `@review.md`; do not search this repository for `review.md` or duplicate the issue and pull-request contents in the prompt.
+If either reference is malformed, ask for valid URLs. If no issue URL is provided, the review will be performed against the pull request alone. The supervisor resolves `@github` and `@review.md`; do not search this repository for `review.md` or duplicate the issue and pull-request contents in the prompt.
 
 Completion criterion: one public GitHub issue URL and one public GitHub pull-request URL are available.
 
@@ -33,7 +33,7 @@ bash skills/code-review-with-supervisor/scripts/request-review.sh '<issue-url>' 
 
 The helper:
 
-1. Resolves the ticket title and derives `.scratch/<ticket-slug>/reviews/<ticket-number>-pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews.
+1. Resolves the PR title (or issue title, if an issue URL was given) and derives `.scratch/<slug>/reviews/pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews.
 2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
 3. Sends `@github`, `@review.md`, both references, their repository URLs, and the destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
 4. Waits up to 30 minutes for a non-streaming response.
