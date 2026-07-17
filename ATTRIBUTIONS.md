@@ -8,7 +8,7 @@ This repository adapts skills from the following sources. See
 Source: https://github.com/obra/superpowers
 
 Adapted skills:
-- **writing-plans** — based on `skills/writing-plans/SKILL.md`
+- **to-plan** — based on [`skills/writing-plans/SKILL.md`](https://github.com/obra/superpowers/blob/main/skills/writing-plans/SKILL.md)
 
 ## mattpocock/skills (MIT)
 

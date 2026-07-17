@@ -45,11 +45,13 @@ Project workflow commands compose the reusable skills below:
 | Command | Workflow |
 |---------|----------|
 | `/spec` | Grill with docs, confirm shared understanding, then write a dated spec |
-| `/plan` | Turn a spec or requirements into an executable implementation plan |
+| `/to-plan` | Turn one ticket and its parent spec into a local executable implementation plan |
 | `/build` | Implement incrementally with tests, verification, and review |
 | `/review` | Review quality, security, performance, and simplicity without fixes |
 | `/fix` | Apply verified fixes with regression coverage and re-verification |
 | `/ship` | Run final gates, then confirm commit and external delivery separately |
+
+Pipeline: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/to-plan <ticket>` → `/implement <plan-path>` → `/code-review`.
 
 ## Available skills
 
@@ -70,7 +72,7 @@ delegate their review pass to this agent.
 | Skill | Description |
 |-------|-------------|
 | **spec** | `/spec` workflow: documented grilling followed by dated spec synthesis |
-| **plan** | `/plan` workflow: executable planning from a spec or requirements |
+| **to-plan** | `/to-plan` workflow: executable planning for one ticket |
 | **build** | `/build` workflow: incremental implementation with tests and review |
 | **review** | `/review` workflow: read-only quality, security, performance, and simplicity review |
 | **fix** | `/fix` workflow: verified fixes with regression coverage and re-verification |
@@ -86,20 +88,21 @@ delegate their review pass to this agent.
 | **ponytail** | Forces the laziest solution that actually works — YAGNI, stdlib first, no unrequested abstractions |
 | **caveman** | Ultra-compressed communication mode. Cuts token usage ~75% |
 | **caveman-commit** | Ultra-compressed Conventional Commits. Short subjects, body only when needed |
-| **to-spec** | Turn the current conversation into a spec and save it as a dated markdown file |
+| **to-spec** | Turn the current conversation into a spec and publish it to the issue tracker |
+| **to-tickets** | Split a spec into blocked tracer-bullet tickets |
+| **to-plan** | Turn one ticket and its parent spec into a local executable implementation plan |
 
 ### Engineering
 
 | Skill | Description |
 |-------|-------------|
-| **writing-plans** | Create bite-sized implementation plans from specs or requirements |
 | **tdd** | Test-driven development — red-green-refactor cycle with test quality guidance |
 | **test-driven-development** | Test-driven development — write failing tests first, prove-it pattern for bugs, test pyramid guidance |
 | **incremental-implementation** | Build in thin vertical slices with individual test-verify-commit per increment |
 | **codebase-design** | Shared vocabulary for designing deep modules with depth, seams, and leverage |
 | **improve-codebase-architecture** | Scan codebase for deepening opportunities, present as HTML report, then grill through each |
 | **domain-modeling** | Build and sharpen a project's domain model — glossary and ADRs |
-| **implement** | Implement work from a spec or tickets using tdd and code-review |
+| **implement** | Execute an implementation plan, spec, or ticket using tdd and code-review |
 | **code-review** | Two-axis review (standards + spec) using parallel sub-agents |
 | **code-review-and-quality** | Multi-axis review across correctness, readability, architecture, security, and performance |
 | **scrutinize** | Outsider-perspective end-to-end review of plans, PRs, diffs, and designs |
