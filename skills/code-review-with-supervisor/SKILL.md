@@ -33,11 +33,12 @@ bash skills/code-review-with-supervisor/scripts/request-review.sh '<issue-url>' 
 
 The helper:
 
-1. Resolves the ticket title and derives `.scratch/<ticket-slug>/reviews/<ticket-number>-pr-<pr-number>-code-review.md`.
-2. Sends `@github`, `@review.md`, both references, their repository URLs, and the destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
-3. Waits up to 30 minutes for a non-streaming response.
-4. Extracts the supervisor's complete non-empty review response.
-5. Atomically writes the review without overwriting an existing file.
+1. Resolves the ticket title and derives `.scratch/<ticket-slug>/reviews/<ticket-number>-pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews.
+2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
+3. Sends `@github`, `@review.md`, both references, their repository URLs, and the destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
+4. Waits up to 30 minutes for a non-streaming response.
+5. Extracts the supervisor's complete non-empty review response.
+6. Atomically writes the review without overwriting an existing file.
 
 If the API request or response extraction fails, report its error and leave the filesystem unchanged. Do not replace the supervisor response with a locally authored review.
 

@@ -5,6 +5,8 @@ readonly API_URL="http://127.0.0.1:8000/v1/chat/completions"
 readonly API_KEY="local-dev-key"
 readonly MODEL="gpt-5-6-thinking-extended"
 
+printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
+
 if [[ $# -ne 1 ]]; then
   printf 'Usage: %s <github-issue-url>\n' "$0" >&2
   exit 2
@@ -38,11 +40,15 @@ if [[ -z $ticket_slug ]]; then
   exit 1
 fi
 
-plan_path=".scratch/${ticket_slug}/plans/${ticket_number}-${ticket_slug}.md"
-if [[ -e $plan_path ]]; then
-  printf 'Error: plan already exists: %s\n' "$plan_path" >&2
-  exit 1
-fi
+plan_directory=".scratch/${ticket_slug}/plans"
+mkdir -p "$plan_directory"
+plan_path="${plan_directory}/${ticket_number}-${ticket_slug}.md"
+run_number=2
+while ! (set -o noclobber; : >"$plan_path") 2>/dev/null; do
+  plan_path="${plan_directory}/${ticket_number}-${ticket_slug}-${run_number}.md"
+  ((run_number += 1))
+done
+trap 'rm -f "$plan_path"' EXIT
 
 prompt=$(cat <<EOF
 @github @to-plan.md
@@ -69,6 +75,10 @@ request=$(jq -n \
   --arg prompt "$prompt" \
   '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
 
+printf 'API URL: %s\nAPI key: ****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
+  "$API_URL" "$MODEL" "$plan_path" "$prompt" >&2
+
+request_started_at=$SECONDS
 if ! response=$(curl -sS --fail-with-body \
   --connect-timeout 15 \
   --max-time 1800 \
@@ -76,9 +86,10 @@ if ! response=$(curl -sS --fail-with-body \
   -H "Authorization: Bearer ${API_KEY}" \
   -H 'Content-Type: application/json' \
   -d "$request"); then
-  printf 'Error: supervisor request failed\n' >&2
+  printf 'Request time: %ss\nError: supervisor request failed\n' "$((SECONDS - request_started_at))" >&2
   exit 1
 fi
+printf 'Request time: %ss\n' "$((SECONDS - request_started_at))" >&2
 
 if ! content=$(jq -er '.choices[0].message.content | select(type == "string" and length > 0)' <<<"$response"); then
   api_error=$(jq -r '.error.message // "missing choices[0].message.content"' <<<"$response" 2>/dev/null || true)
@@ -92,9 +103,8 @@ if [[ -z $plan ]]; then
   exit 1
 fi
 
-mkdir -p "$(dirname "$plan_path")"
 temporary_path=$(mktemp "${plan_path}.tmp.XXXXXX")
-trap 'rm -f "$temporary_path"' EXIT
+trap 'rm -f "$temporary_path" "$plan_path"' EXIT
 printf '%s\n' "$plan" >"$temporary_path"
 mv "$temporary_path" "$plan_path"
 trap - EXIT
