@@ -67,7 +67,7 @@ EOF
 request=$(jq -n \
   --arg model "$MODEL" \
   --arg prompt "$prompt" \
-  '{model: $model, messages: [{role: "user", content: $prompt}], stream: false}')
+  '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
 
 if ! response=$(curl -sS --fail-with-body \
   --connect-timeout 15 \
