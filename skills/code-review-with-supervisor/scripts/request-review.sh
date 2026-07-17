@@ -171,6 +171,7 @@ trap - EXIT
 
 review=$(cat "$review_path"; printf x)
 review=${review%x}
+review=${review%$'\n'}
 
 if [[ $no_post == true ]]; then
   printf 'PR review post: skipped (--no-post)\n' >&2
