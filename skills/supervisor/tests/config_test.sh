@@ -383,12 +383,33 @@ EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ ${1:-} != "issue" || ${2:-} != "view" ]]; then
-  printf 'Unexpected gh arguments: %s\n' "$*" >&2
-  exit 64
+if [[ $1 == "issue" && $2 == "view" ]]; then
+  printf '%s\n' "${MOCK_GH_TITLE:?}"
+  exit 0
 fi
 
-printf '%s\n' "${MOCK_GH_TITLE:?}"
+if [[ $1 == "pr" && $2 == "view" ]]; then
+  printf '%s\n' "${MOCK_PR_TITLE:-Mock PR Title}"
+  exit 0
+fi
+
+if [[ $1 == "pr" && $2 == "review" ]]; then
+  body_capture="${MOCK_PR_REVIEW_BODY_CAPTURE:-}"
+  if [[ -n $body_capture ]]; then
+    shift 3
+    while [[ $# -gt 0 ]]; do
+      if [[ $1 == "--body" && $# -ge 2 ]]; then
+        printf '%s\n' "$2" >"$body_capture"
+        break
+      fi
+      shift
+    done
+  fi
+  exit 0
+fi
+
+printf 'Unexpected gh arguments: %s\n' "$*" >&2
+exit 64
 EOF
 
   cat >"$mock_bin/curl" <<'EOF'
@@ -549,6 +570,7 @@ test_review_helper_uses_shared_config() {
     PATH="$mock_bin:$PATH" \
     MOCK_OPENCODE_CONFIG="$fixture" \
     MOCK_GH_TITLE="Review Ticket" \
+    MOCK_PR_TITLE="Mock PR Title" \
     MOCK_CURL_CAPTURE="$curl_capture" \
     MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review\n\nNo findings."}}]}' \
       "$bash_bin" "$review_script" \
@@ -556,12 +578,12 @@ test_review_helper_uses_shared_config() {
         "https://github.com/acme/example/pull/9"
   )
 
-  review_path="$worktree/.scratch/acme-example-pr-9/reviews/pr-9-code-review.md"
+  review_path="$worktree/.scratch/mock-pr-title/reviews/pr-9-code-review.md"
   curl_arguments=$(<"$curl_capture")
 
   assert_contains \
     "$output" \
-    ".scratch/acme-example-pr-9/reviews/pr-9-code-review.md" \
+    ".scratch/mock-pr-title/reviews/pr-9-code-review.md" \
     "review helper should print its artifact path"
 
   if [[ ! -f $review_path ]]; then
@@ -596,6 +618,7 @@ test_review_helper_preserves_whitespace() {
   local mock_bin="$temporary_root/helper-review-ws-bin"
   local worktree="$temporary_root/helper-review-ws-worktree"
   local curl_capture="$temporary_root/helper-review-ws-curl.txt"
+  local body_capture="$temporary_root/helper-review-ws-body.txt"
   local output
   local review_path
 
@@ -613,6 +636,8 @@ test_review_helper_preserves_whitespace() {
     PATH="$mock_bin:$PATH" \
     MOCK_OPENCODE_CONFIG="$fixture" \
     MOCK_GH_TITLE="Whitespace Review" \
+    MOCK_PR_TITLE="Whitespace Review PR" \
+    MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
     MOCK_CURL_CAPTURE="$curl_capture" \
     MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n  # Code Review\n  \nNo findings.  \n  "}}]}' \
       "$bash_bin" "$review_script" \
@@ -620,7 +645,7 @@ test_review_helper_preserves_whitespace() {
         "https://github.com/acme/example/pull/99"
   )
 
-  review_path="$worktree/.scratch/acme-example-pr-99/reviews/pr-99-code-review.md"
+  review_path="$worktree/.scratch/whitespace-review-pr/reviews/pr-99-code-review.md"
 
   if [[ ! -f $review_path ]]; then
     fail "review helper should write the file with whitespace content"
@@ -629,9 +654,23 @@ test_review_helper_preserves_whitespace() {
   assert_equal \
     $'  \n  # Code Review\n  \nNo findings.  \n  ' \
     "$(<"$review_path")" \
-    "review helper should preserve leading and trailing whitespace"
+    "review helper should preserve leading and trailing whitespace in file"
 
-  pass "review helper preserves whitespace-wrapped content"
+  if [[ ! -f $body_capture ]]; then
+    fail "review helper should have posted a review"
+  fi
+
+  assert_contains \
+    "$(<"$body_capture")" \
+    $'  \n  # Code Review\n  \nNo findings.  \n  ' \
+    "posted review should contain the whitespace-preserved content"
+
+  assert_contains \
+    "$(<"$body_capture")" \
+    "*Full review saved to:" \
+    "posted review should contain the artifact-path footer"
+
+  pass "review helper preserves whitespace-wrapped content and posts it correctly"
 }
 
 test_request_failure_diagnostic_is_useful_and_secret_safe() {
