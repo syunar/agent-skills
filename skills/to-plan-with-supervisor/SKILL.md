@@ -11,7 +11,7 @@ Delegate `/to-plan` to the supervisor model, then save its Markdown response as 
 **Requires the `supervisor` skill to be installed alongside this skill.** Install both together:
 
 ```bash
-npx skills ... --skill supervisor --skill to-plan-with-supervisor
+npx skills@latest add syunar/agent-skills --skill supervisor --skill to-plan-with-supervisor
 ```
 
 ## 1. Validate the ticket
