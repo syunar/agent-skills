@@ -479,6 +479,53 @@ test_plan_helper_uses_shared_config() {
   pass "plan helper uses shared supervisor configuration"
 }
 
+test_plan_helper_without_heading() {
+  local fixture="$temporary_root/helper-plan-noheading-config.json"
+  local mock_bin="$temporary_root/helper-plan-noheading-bin"
+  local worktree="$temporary_root/helper-plan-noheading-worktree"
+  local curl_capture="$temporary_root/helper-plan-noheading-curl.txt"
+  local output
+  local plan_path
+
+  write_config \
+    "$fixture" \
+    "http://supervisor.test:9000" \
+    "test-api-key" \
+    "test-model"
+
+  make_helper_mock_bin "$mock_bin"
+  mkdir -p "$worktree"
+
+  output=$(
+    cd "$worktree"
+    PATH="$mock_bin:$PATH" \
+    MOCK_OPENCODE_CONFIG="$fixture" \
+    MOCK_GH_TITLE="No Heading Ticket" \
+    MOCK_CURL_CAPTURE="$curl_capture" \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"Just freeform content without a heading."}}]}' \
+      "$bash_bin" "$plan_script" \
+        "https://github.com/acme/example/issues/99"
+  )
+
+  plan_path="$worktree/.scratch/no-heading-ticket/plans/99-no-heading-ticket.md"
+
+  assert_contains \
+    "$output" \
+    ".scratch/no-heading-ticket/plans/99-no-heading-ticket.md" \
+    "plan helper should succeed without a heading"
+
+  if [[ ! -f $plan_path ]]; then
+    fail "plan helper should write the file even without a heading"
+  fi
+
+  assert_equal \
+    "Just freeform content without a heading." \
+    "$(<"$plan_path")" \
+    "plan helper should save content verbatim without heading"
+
+  pass "plan helper succeeds without an Implementation Plan heading"
+}
+
 test_review_helper_uses_shared_config() {
   local fixture="$temporary_root/helper-review-config.json"
   local mock_bin="$temporary_root/helper-review-bin"
@@ -542,6 +589,49 @@ test_review_helper_uses_shared_config() {
     "review helper should use the configured model"
 
   pass "review helper uses shared supervisor configuration"
+}
+
+test_review_helper_preserves_whitespace() {
+  local fixture="$temporary_root/helper-review-ws-config.json"
+  local mock_bin="$temporary_root/helper-review-ws-bin"
+  local worktree="$temporary_root/helper-review-ws-worktree"
+  local curl_capture="$temporary_root/helper-review-ws-curl.txt"
+  local output
+  local review_path
+
+  write_config \
+    "$fixture" \
+    "http://review-supervisor.test:9100/" \
+    "review-api-key" \
+    "review-model"
+
+  make_helper_mock_bin "$mock_bin"
+  mkdir -p "$worktree"
+
+  output=$(
+    cd "$worktree"
+    PATH="$mock_bin:$PATH" \
+    MOCK_OPENCODE_CONFIG="$fixture" \
+    MOCK_GH_TITLE="Whitespace Review" \
+    MOCK_CURL_CAPTURE="$curl_capture" \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n  # Code Review\n  \nNo findings.  \n  "}}]}' \
+      "$bash_bin" "$review_script" \
+        "https://github.com/acme/example/issues/98" \
+        "https://github.com/acme/example/pull/99"
+  )
+
+  review_path="$worktree/.scratch/acme-example-pr-99/reviews/pr-99-code-review.md"
+
+  if [[ ! -f $review_path ]]; then
+    fail "review helper should write the file with whitespace content"
+  fi
+
+  assert_equal \
+    $'  \n  # Code Review\n  \nNo findings.  \n  ' \
+    "$(<"$review_path")" \
+    "review helper should preserve leading and trailing whitespace"
+
+  pass "review helper preserves whitespace-wrapped content"
 }
 
 test_request_failure_diagnostic_is_useful_and_secret_safe() {
@@ -669,7 +759,9 @@ main() {
   test_direct_global_file_fallback
   test_opencode_failure_does_not_hide_with_file_fallback
   test_plan_helper_uses_shared_config
+  test_plan_helper_without_heading
   test_review_helper_uses_shared_config
+  test_review_helper_preserves_whitespace
   test_request_failure_diagnostic_is_useful_and_secret_safe
   test_invalid_response_redacts_api_key
 

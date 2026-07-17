@@ -162,20 +162,9 @@ if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and 
   exit 1
 fi
 
-review_content=$(
-  jq -nr \
-    --arg content "$review" \
-    '$content | sub("^\\s+"; "") | sub("\\s+$"; "")'
-)
-
-if [[ -z $review_content ]]; then
-  printf 'Error: supervisor response was empty after trimming whitespace\n' >&2
-  exit 1
-fi
-
 temporary_path=$(mktemp "${review_path}.tmp.XXXXXX")
 trap 'rm -f "$temporary_path" "$review_path"' EXIT
-printf '%s\n' "$review_content" >"$temporary_path"
+printf '%s\n' "$review" >"$temporary_path"
 mv "$temporary_path" "$review_path"
 trap - EXIT
 
@@ -186,7 +175,7 @@ elif [[ $gh_available != true ]]; then
 else
   printf -v posted_review \
     '%s\n\n---\n*Full review saved to: `%s`*' \
-    "$review_content" \
+    "$review" \
     "$review_path"
 
   if post_error=$(

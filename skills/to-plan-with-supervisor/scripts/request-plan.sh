@@ -106,15 +106,9 @@ if ! content=$(jq -er '.choices[0].message.content | select(type == "string" and
   exit 1
 fi
 
-plan=$(awk 'found || /^# .*Implementation Plan$/ { found = 1; print }' <<<"$content")
-if [[ -z $plan ]]; then
-  printf 'Error: supervisor response did not contain an Implementation Plan heading\n' >&2
-  exit 1
-fi
-
 temporary_path=$(mktemp "${plan_path}.tmp.XXXXXX")
 trap 'rm -f "$temporary_path" "$plan_path"' EXIT
-printf '%s\n' "$plan" >"$temporary_path"
+printf '%s\n' "$content" >"$temporary_path"
 mv "$temporary_path" "$plan_path"
 trap - EXIT
 

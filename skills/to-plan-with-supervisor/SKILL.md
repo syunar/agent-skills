@@ -67,7 +67,7 @@ The helper:
 2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
 3. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@to-plan.md`, the ticket URL, owner/repo, and exact destination path to that configured supervisor.
 4. Waits up to 30 minutes for a non-streaming response.
-5. Extracts the implementation-plan Markdown from the response.
+5. Saves the complete supervisor response verbatim.
 6. Atomically writes the plan without overwriting an existing file.
 
 If the API request or response extraction fails, report its error and leave the filesystem unchanged. Do not replace the supervisor response with a locally authored plan.

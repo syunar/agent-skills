@@ -85,7 +85,7 @@ The helper:
 3. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
 4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@review.md`, the available references, their owner/repo, and the destination path to that configured supervisor.
 5. Waits up to 30 minutes for a non-streaming response.
-6. Extracts and trims the supervisor's complete non-empty review response.
+6. Extracts the supervisor's complete non-empty review response and saves it verbatim.
 7. Atomically writes the review without overwriting an existing file.
 8. By default, appends the local artifact path to a copy of the review and submits it through `gh pr review --comment`.
 9. When `--no-post` is present, skips posting.
