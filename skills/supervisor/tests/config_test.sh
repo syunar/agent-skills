@@ -639,7 +639,7 @@ test_review_helper_preserves_whitespace() {
     MOCK_PR_TITLE="Whitespace Review PR" \
     MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
     MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review\n\nNo findings.\n\n"}}]}' \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n\n# Code Review\n\nNo findings.\n\n"}}]}' \
       "$bash_bin" "$review_script" \
         "https://github.com/acme/example/issues/98" \
         "https://github.com/acme/example/pull/99"
@@ -655,9 +655,9 @@ test_review_helper_preserves_whitespace() {
   raw_file=${raw_file%x}
 
   assert_equal \
-    $'# Code Review\n\nNo findings.\n\n\n' \
+    $'  \n\n# Code Review\n\nNo findings.\n\n\n' \
     "$raw_file" \
-    "file should preserve all original trailing newlines plus jq output newline"
+    "file should preserve leading whitespace and trailing newlines"
 
   if [[ ! -f $body_capture ]]; then
     fail "review helper should have posted a review"
@@ -667,9 +667,9 @@ test_review_helper_preserves_whitespace() {
   raw_body=${raw_body%x}
 
   assert_equal \
-    $'# Code Review\n\nNo findings.\n\n\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
+    $'  \n\n# Code Review\n\nNo findings.\n\n\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
     "$raw_body" \
-    "posted body should equal supervisor content plus footer"
+    "posted body should preserve leading whitespace and trailing newlines plus footer"
 
   pass "review helper preserves trailing newlines in file and posted body"
 }
