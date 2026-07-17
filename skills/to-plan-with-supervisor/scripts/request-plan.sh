@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-readonly API_URL="http://127.0.0.1:8000/v1/chat/completions"
-readonly API_KEY="local-dev-key"
-readonly MODEL="gpt-5-6-thinking-extended"
-
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
 if [[ $# -ne 1 ]]; then
@@ -29,6 +25,16 @@ for command in curl gh jq; do
     exit 1
   fi
 done
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+config_bootstrap="${script_dir}/../../supervisor/scripts/lib/config.sh"
+if [[ ! -f $config_bootstrap ]]; then
+  printf 'Error: supervisor config bootstrap not found at %s\n' "$config_bootstrap" >&2
+  printf 'Install the "supervisor" skill alongside this skill:\n' >&2
+  printf '  npx skills@latest add syunar/agent-skills --skill supervisor --skill to-plan-with-supervisor\n' >&2
+  exit 1
+fi
+source "$config_bootstrap"
 
 ticket_title=$(gh issue view "$ticket_url" --json title --jq .title)
 ticket_slug=$(printf '%s' "$ticket_title" \
@@ -71,29 +77,36 @@ EOF
 )
 
 request=$(jq -n \
-  --arg model "$MODEL" \
+  --arg model "$SUPERVISOR_MODEL" \
   --arg prompt "$prompt" \
   '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
 
 printf 'API URL: %s\nAPI key: %s****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
-  "$API_URL" "${API_KEY:0:4}" "$MODEL" "$plan_path" "$prompt" >&2
+  "$SUPERVISOR_API_URL" "${SUPERVISOR_API_KEY:0:4}" "$SUPERVISOR_MODEL" "$plan_path" "$prompt" >&2
 
 request_started_at=$SECONDS
 if ! response=$(curl -sS --fail-with-body \
   --connect-timeout 15 \
   --max-time 1800 \
-  -X POST "$API_URL" \
-  -H "Authorization: Bearer ${API_KEY}" \
+  -X POST "$SUPERVISOR_API_URL" \
+  -H "Authorization: Bearer ${SUPERVISOR_API_KEY}" \
   -H 'Content-Type: application/json' \
   -d "$request"); then
-  printf 'Request time: %ss\nError: supervisor request failed\n' "$((SECONDS - request_started_at))" >&2
+  printf 'Error: supervisor request failed (url=%s, model=%s, time=%ss)\n' \
+    "$SUPERVISOR_API_URL" "$SUPERVISOR_MODEL" "$((SECONDS - request_started_at))" >&2
   exit 1
 fi
 printf 'Request time: %ss\n' "$((SECONDS - request_started_at))" >&2
 
 if ! content=$(jq -er '.choices[0].message.content | select(type == "string" and length > 0)' <<<"$response"); then
   api_error=$(jq -r '.error.message // "missing choices[0].message.content"' <<<"$response" 2>/dev/null || true)
-  printf 'Error: invalid supervisor response: %s\n' "$api_error" >&2
+  api_error_redacted=${api_error//"${SUPERVISOR_API_KEY}"/"***"}
+  printf \
+    'Error: invalid supervisor response (url=%s, model=%s): %s\n' \
+    "$SUPERVISOR_API_URL" \
+    "$SUPERVISOR_MODEL" \
+    "$api_error_redacted" \
+    >&2
   exit 1
 fi
 
