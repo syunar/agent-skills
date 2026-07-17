@@ -10,7 +10,7 @@ Delegate a pull-request review to the supervisor model, save its Markdown respon
 
 ## 1. Validate the references
 
-The first argument is the originating public GitHub issue URL (optional); the second is the public GitHub pull-request URL.
+After an optional leading `--post`, provide either a pull-request URL alone, or an issue URL followed by a pull-request URL.
 
 Expected forms:
 
