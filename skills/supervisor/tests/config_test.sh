@@ -593,6 +593,60 @@ test_request_failure_diagnostic_is_useful_and_secret_safe() {
   pass "request failure includes URL and model without API key"
 }
 
+test_invalid_response_redacts_api_key() {
+  local fixture="$temporary_root/redaction-config.json"
+  local mock_bin="$temporary_root/redaction-bin"
+  local worktree="$temporary_root/redaction-worktree"
+  local curl_capture="$temporary_root/redaction-curl.txt"
+  local output
+
+  write_config \
+    "$fixture" \
+    "http://redact-supervisor.test:9300" \
+    "my-secret-key-123" \
+    "redact-model"
+
+  make_helper_mock_bin "$mock_bin"
+  mkdir -p "$worktree"
+
+  if output=$(
+    cd "$worktree"
+    PATH="$mock_bin:$PATH" \
+    MOCK_OPENCODE_CONFIG="$fixture" \
+    MOCK_GH_TITLE="Redaction Ticket" \
+    MOCK_CURL_CAPTURE="$curl_capture" \
+    MOCK_CURL_FAIL=0 \
+    MOCK_CURL_RESPONSE='{"error":{"message":"invalid API key: my-secret-key-123"}}' \
+      "$bash_bin" "$plan_script" \
+        "https://github.com/acme/example/issues/45" \
+        2>&1
+  ); then
+    fail "invalid response should return non-zero"
+  fi
+
+  assert_contains \
+    "$output" \
+    "url=http://redact-supervisor.test:9300/v1/chat/completions" \
+    "invalid response should include the configured URL"
+
+  assert_contains \
+    "$output" \
+    "model=redact-model" \
+    "invalid response should include the configured model"
+
+  assert_not_contains \
+    "$output" \
+    "my-secret-key-123" \
+    "invalid response must redact the API key from the error message"
+
+  assert_contains \
+    "$output" \
+    "invalid API key: ***" \
+    "invalid response should show redacted error message with ***"
+
+  pass "invalid response redacts API key from error message"
+}
+
 main() {
   test_valid_cli_config
   test_trailing_slash_normalization
@@ -617,6 +671,7 @@ main() {
   test_plan_helper_uses_shared_config
   test_review_helper_uses_shared_config
   test_request_failure_diagnostic_is_useful_and_secret_safe
+  test_invalid_response_redacts_api_key
 
   printf 'PASS: %d tests\n' "$pass_count"
 }
