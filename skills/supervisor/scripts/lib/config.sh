@@ -91,7 +91,7 @@ _supervisor_load_config() {
     return 1
   fi
 
-  base_url=${base_url%/}
+  while [[ $base_url == */ ]]; do base_url=${base_url%/}; done
 
   if [[ -z $base_url ]]; then
     _supervisor_config_error \

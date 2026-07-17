@@ -193,6 +193,26 @@ test_trailing_slash_normalization() {
   pass "normalizes a trailing baseURL slash"
 }
 
+test_multiple_trailing_slashes_normalization() {
+  local fixture="$temporary_root/double-slash.json"
+  local output
+
+  write_config \
+    "$fixture" \
+    "http://supervisor.test:9000//" \
+    "test-api-key" \
+    "test-model"
+
+  output=$(run_loader_with_cli "$fixture")
+
+  assert_equal \
+    $'http://supervisor.test:9000/v1/chat/completions\ntest-api-key\ntest-model' \
+    "$output" \
+    "multiple trailing slashes should all be removed"
+
+  pass "normalizes multiple trailing slashes"
+}
+
 test_missing_config_block() {
   local fixture="$temporary_root/missing-block.json"
   local output
@@ -576,6 +596,7 @@ test_request_failure_diagnostic_is_useful_and_secret_safe() {
 main() {
   test_valid_cli_config
   test_trailing_slash_normalization
+  test_multiple_trailing_slashes_normalization
   test_missing_config_block
   test_missing_field \
     "baseUrl" \
