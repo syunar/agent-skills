@@ -1,116 +1,68 @@
 # Agent Skills
 
-A collection of reusable agent skills for code review, planning, implementation, and productivity workflows. Compatible with OpenCode, Claude Code, Codex, Cursor, and other Agent Skills-compatible tools.
+A collection of reusable agent skills for code review, planning, implementation, and productivity workflows.
 
 ## Installation
 
 List available skills:
 
 ```bash
-npx skills add syunar/agent-skills --list
+npx skills@latest add syunar/agent-skills --list
 ```
 
 Install interactively:
 
 ```bash
-npx skills add syunar/agent-skills
+npx skills@latest add syunar/agent-skills
 ```
 
 Install a specific skill:
 
 ```bash
-npx skills add syunar/agent-skills --skill tdd
+npx skills@latest add syunar/agent-skills --skill tdd
 ```
 
 Install globally for a specific agent:
 
 ```bash
-npx skills add syunar/agent-skills --skill tdd --agent opencode --global --yes
+npx skills@latest add syunar/agent-skills --skill tdd --agent opencode --global --yes
 ```
-
-## Claude Code agents
-
-Project custom agents live in `.claude/agents/*.md`.
-
-| Agent | Role |
-|-------|------|
-| `code-reviewer` | Read-only five-axis review for a change, diff, or pull request |
-
-Ask Claude Code to use the `code-reviewer` subagent, or start a session with
-`claude --agent code-reviewer`. The `/review` and `/ship` workflow skills
-delegate their review pass to this agent.
-
-Project workflow commands compose the reusable skills below:
-
-| Command | Workflow |
-|---------|----------|
-| `/spec` | Grill with docs, confirm shared understanding, then write a dated spec |
-| `/to-plan` | Turn one ticket and its parent spec into a local executable implementation plan |
-| `/build` | Implement incrementally with tests, verification, and review |
-| `/review` | Review quality, security, performance, and simplicity without fixes |
-| `/fix` | Apply verified fixes with regression coverage and re-verification |
-| `/ship` | Run final gates, then confirm commit and external delivery separately |
-
-Pipeline: `/grill-with-docs` → `/to-spec` → `/to-tickets` → `/to-plan <ticket>` → `/implement <plan-path>` → `/code-review`.
 
 ## Available skills
 
-### Claude Code agents
-
-Project custom agents live in `.claude/agents/*.md`.
-
-| Agent | Role |
-|-------|------|
-| `code-reviewer` | Read-only five-axis review for a change, diff, or pull request |
-
-Ask Claude Code to use the `code-reviewer` subagent, or start a session with
-`claude --agent code-reviewer`. The `/review` and `/ship` workflow skills
-delegate their review pass to this agent.
-
-### Workflow
-
 | Skill | Description |
 |-------|-------------|
-| **spec** | `/spec` workflow: documented grilling followed by dated spec synthesis |
-| **to-plan** | `/to-plan` workflow: executable planning for one ticket |
-| **build** | `/build` workflow: incremental implementation with tests and review |
-| **review** | `/review` workflow: read-only quality, security, performance, and simplicity review |
-| **fix** | `/fix` workflow: verified fixes with regression coverage and re-verification |
-| **ship** | `/ship` workflow: final gates and confirmed delivery actions |
-
-### Productivity
-
-| Skill | Description |
-|-------|-------------|
-| **grill-me** | Interview you relentlessly about a plan or design until shared understanding is reached |
-| **grill-with-docs** | Relentless interview that also creates ADRs and glossary as you go |
-| **grilling** | The reusable interview loop behind grill-me and grill-with-docs |
-| **ponytail** | Forces the laziest solution that actually works — YAGNI, stdlib first, no unrequested abstractions |
-| **caveman** | Ultra-compressed communication mode. Cuts token usage ~75% |
-| **caveman-commit** | Ultra-compressed Conventional Commits. Short subjects, body only when needed |
-| **to-spec** | Turn the current conversation into a spec and publish it to the issue tracker |
-| **to-tickets** | Split a spec into blocked tracer-bullet tickets |
-| **to-plan** | Turn one ticket and its parent spec into a local executable implementation plan |
-
-### Engineering
-
-| Skill | Description |
-|-------|-------------|
-| **tdd** | Test-driven development — red-green-refactor cycle with test quality guidance |
-| **test-driven-development** | Test-driven development — write failing tests first, prove-it pattern for bugs, test pyramid guidance |
-| **incremental-implementation** | Build in thin vertical slices with individual test-verify-commit per increment |
-| **codebase-design** | Shared vocabulary for designing deep modules with depth, seams, and leverage |
-| **improve-codebase-architecture** | Scan codebase for deepening opportunities, present as HTML report, then grill through each |
-| **domain-modeling** | Build and sharpen a project's domain model — glossary and ADRs |
-| **implement** | Execute an implementation plan, spec, or ticket using tdd and code-review |
-| **code-review** | Two-axis review (standards + spec) using parallel sub-agents |
-| **code-review-and-quality** | Multi-axis review across correctness, readability, architecture, security, and performance |
-| **scrutinize** | Outsider-perspective end-to-end review of plans, PRs, diffs, and designs |
-| **code-simplification** | Simplify code for clarity while preserving exact behavior |
-| **security-and-hardening** | Security-first practices — input validation, auth, SSRF, secrets, LLM safety |
-| **performance-optimization** | Measure-first optimization for frontend, backend, queries, and Core Web Vitals |
-| **explain-diff-html** | Produce a rich, interactive HTML explanation of any code change |
-| **design-python-backend-architecture** | Design or review a thin, feature-first Python modular monolith |
+| `ask-matt` | Ask which skill or flow fits your situation. A router over the skills in this repo. |
+| `batch-grill-me` | A relentless interview that asks every frontier question at once, round by round. |
+| `caveman-commit` | Ultra-compressed commit message generator. Cuts noise from commit messages while preserving intent and reasoning. Conventional Commits format. Subject ≤50 chars, body only when "why" isn't obvious. Use when user says "write a commit", "commit message", "generate commit", or "/commit". Auto-triggers when staging changes. |
+| `code-review` | Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes — Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/PRD asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to "review since X". |
+| `code-review-with-supervisor` | Ask the supervisor model to review one GitHub pull request against its originating ticket and save the review locally. |
+| `code-simplification` | Simplifies code for clarity. Use when refactoring code for clarity without changing behavior. Use when code works but is harder to read, maintain, or extend than it should be. Use when reviewing code that has accumulated unnecessary complexity. |
+| `codebase-design` | Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary. |
+| `design-python-backend-architecture` | Design or review a Python backend using a thin, feature-first modular monolith. Use for APIs, WebSockets, webhooks, background jobs, queues, events, schedulers, databases, caches, storage, search, integrations, CPU/GPU workers, observability, security, deployment, and testing. |
+| `diagnosing-bugs` | Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow. |
+| `domain-modeling` | Build and sharpen a project's domain model. Use when the user wants to pin down domain terminology or a ubiquitous language, record an architectural decision, or when another skill needs to maintain the domain model. |
+| `explain-diff-html` | Use when the user asks for a rich explanation of a code change, diff, branch, or PR. Produces HTML output. |
+| `grill-me` | A relentless interview to sharpen a plan or design. |
+| `grill-with-docs` | A relentless interview to sharpen a plan or design, which also creates docs (ADR's and glossary) as we go. |
+| `grilling` | Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases. |
+| `handoff` | Compact the current conversation into a handoff document for another agent to pick up. |
+| `implement` | Implement a piece of work based on an implementation plan, spec, or set of tickets. |
+| `improve-codebase-architecture` | Scan a codebase for deepening opportunities, present them as a visual HTML report, then grill through whichever one you pick. |
+| `prototype` | Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like. |
+| `research` | Investigate a question against high-trust primary sources and capture the findings as a Markdown file in the repo. Use when the user wants a topic researched, docs or API facts gathered, or reading legwork delegated to a background agent. |
+| `resolving-merge-conflicts` | Use when you need to resolve an in-progress git merge/rebase conflict. |
+| `scrutinize` | Outsider-perspective end-to-end review of a plan, PR, or code change. First questions intent and whether a simpler/more elegant approach would achieve the same goal, then traces the actual code path (not just the diff) to verify the change does what it claims. Output is concise, actionable, and every call carries its rationale. Trigger on /scrutinize and proactively whenever the user asks to review, audit, sanity-check, or get a second opinion on a plan, PR, diff, design doc, or proposed code change. |
+| `setup-matt-pocock-skills` | Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills. |
+| `tdd` | Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests. |
+| `teach` | Teach the user a new skill or concept, within this workspace. |
+| `to-plan` | Turn one ticket and its parent spec into a local executable implementation plan. |
+| `to-plan-with-supervisor` | Ask the supervisor model to turn one public GitHub ticket into a local executable implementation plan. |
+| `to-spec` | Turn the current conversation into a spec and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed. |
+| `to-tickets` | Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker — edges as text in one file per ticket locally, or native blocking links on a real tracker. |
+| `triage` | Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs. |
+| `wayfinder` | Plan a huge chunk of work — more than one agent session can hold — as a shared map of decision tickets on your issue tracker, and resolve them one at a time until the way to the destination is clear. |
+| `writing-great-skills` | Reference for writing and editing skills well — the vocabulary and principles that make a skill predictable. |
 
 ## License
 
