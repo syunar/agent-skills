@@ -8,6 +8,12 @@ disable-model-invocation: true
 
 Delegate a pull-request review to the supervisor model, save its Markdown response as a local review artifact, and post a comment-level review to the pull request by default.
 
+**Requires the `supervisor` skill to be installed alongside this skill.** Install both together:
+
+```bash
+npx skills ... --skill supervisor --skill code-review-with-supervisor
+```
+
 ## 1. Validate the references
 
 After an optional leading `--no-post`, provide either a pull-request URL alone, or an issue URL followed by a pull-request URL.

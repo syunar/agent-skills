@@ -8,6 +8,12 @@ disable-model-invocation: true
 
 Delegate `/to-plan` to the supervisor model, then save its Markdown response as the local implementation plan.
 
+**Requires the `supervisor` skill to be installed alongside this skill.** Install both together:
+
+```bash
+npx skills ... --skill supervisor --skill to-plan-with-supervisor
+```
+
 ## 1. Validate the ticket
 
 Treat the invocation argument as one public GitHub issue URL. If it is missing or is not an `https://github.com/<owner>/<repo>/issues/<number>` URL, ask for that URL.
