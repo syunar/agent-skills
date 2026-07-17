@@ -7,9 +7,9 @@ readonly MODEL="gpt-5-6-thinking-extended"
 
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
-post_review=false
-if [[ ${1:-} == --post ]]; then
-  post_review=true
+no_post=false
+if [[ ${1:-} == --no-post ]]; then
+  no_post=true
   shift
 fi
 
@@ -31,7 +31,7 @@ case $# in
     issue_repo_url="https://github.com/${issue_owner}/${issue_repo}"
     ;;
   *)
-    printf 'Usage: %s [--post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    printf 'Usage: %s [--no-post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -176,30 +176,28 @@ printf '%s\n' "$review_content" >"$temporary_path"
 mv "$temporary_path" "$review_path"
 trap - EXIT
 
-if [[ $post_review == true ]]; then
-  if [[ $gh_available != true ]]; then
-    printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
-  else
-    printf -v posted_review \
-      '%s\n\n---\n*Full review saved to: `%s`*' \
-      "$review_content" \
-      "$review_path"
-
-    if post_error=$(
-      gh pr review "$pull_request_url" \
-        --comment \
-        --body "$posted_review" \
-        2>&1
-    ); then
-      printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
-    else
-      printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
-        "$review_path" >&2
-      printf '%s\n' "$post_error" >&2
-    fi
-  fi
+if [[ $no_post == true ]]; then
+  printf 'PR review post: skipped (--no-post)\n' >&2
+elif [[ $gh_available != true ]]; then
+  printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
 else
-  printf 'PR review post: not requested\n' >&2
+  printf -v posted_review \
+    '%s\n\n---\n*Full review saved to: `%s`*' \
+    "$review_content" \
+    "$review_path"
+
+  if post_error=$(
+    gh pr review "$pull_request_url" \
+      --comment \
+      --body "$posted_review" \
+      2>&1
+  ); then
+    printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
+  else
+    printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
+      "$review_path" >&2
+    printf '%s\n' "$post_error" >&2
+  fi
 fi
 
 printf '%s\n' "$review_path"
