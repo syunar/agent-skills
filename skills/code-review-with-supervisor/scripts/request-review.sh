@@ -7,6 +7,12 @@ readonly MODEL="gpt-5-6-thinking-extended"
 
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
+post_review=false
+if [[ ${1:-} == --post ]]; then
+  post_review=true
+  shift
+fi
+
 case $# in
   1)
     pull_request_url=${1%/}
@@ -25,7 +31,7 @@ case $# in
     issue_repo_url="https://github.com/${issue_owner}/${issue_repo}"
     ;;
   *)
-    printf 'Usage: %s [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    printf 'Usage: %s [--post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -39,21 +45,39 @@ pr_repo=${BASH_REMATCH[2]}
 pr_number=${BASH_REMATCH[3]}
 pr_repo_url="https://github.com/${pr_owner}/${pr_repo}"
 
-for command in curl gh jq; do
+for command in curl jq; do
   if ! command -v "$command" >/dev/null 2>&1; then
     printf 'Error: required command not found: %s\n' "$command" >&2
     exit 1
   fi
 done
 
-pr_title=$(gh pr view "$pull_request_url" --json title --jq .title)
-review_slug=$(printf '%s' "$pr_title" \
-  | tr '[:upper:]' '[:lower:]' \
-  | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+gh_available=false
+if command -v gh >/dev/null 2>&1; then
+  gh_available=true
+fi
 
-if [[ -z $review_slug ]]; then
-  printf 'Error: could not derive an artifact slug from PR title: %s\n' "$pr_title" >&2
-  exit 1
+review_slug="${pr_owner}-${pr_repo}-pr-${pr_number}"
+
+if [[ $gh_available == true ]]; then
+  if pr_title=$(gh pr view "$pull_request_url" --json title --jq .title 2>/dev/null); then
+    title_slug=$(printf '%s' "$pr_title" \
+      | tr '[:upper:]' '[:lower:]' \
+      | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+
+    if [[ -n $title_slug ]]; then
+      review_slug=$title_slug
+    else
+      printf 'Warning: could not derive an artifact slug from PR title; using URL-derived slug: %s\n' \
+        "$review_slug" >&2
+    fi
+  else
+    printf 'Warning: could not resolve PR title with gh; using URL-derived slug: %s\n' \
+      "$review_slug" >&2
+  fi
+else
+  printf 'Warning: gh is not installed; using URL-derived artifact slug: %s\n' \
+    "$review_slug" >&2
 fi
 
 review_directory=".scratch/${review_slug}/reviews"
@@ -135,10 +159,47 @@ if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and 
   exit 1
 fi
 
+review_content=$(
+  jq -nr \
+    --arg content "$review" \
+    '$content | sub("^\\s+"; "") | sub("\\s+$"; "")'
+)
+
+if [[ -z $review_content ]]; then
+  printf 'Error: supervisor response was empty after trimming whitespace\n' >&2
+  exit 1
+fi
+
 temporary_path=$(mktemp "${review_path}.tmp.XXXXXX")
 trap 'rm -f "$temporary_path" "$review_path"' EXIT
-printf '%s\n' "$review" >"$temporary_path"
+printf '%s\n' "$review_content" >"$temporary_path"
 mv "$temporary_path" "$review_path"
 trap - EXIT
+
+if [[ $post_review == true ]]; then
+  if [[ $gh_available != true ]]; then
+    printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
+  else
+    printf -v posted_review \
+      '%s\n\n---\n*Full review saved to: `%s`*' \
+      "$review_content" \
+      "$review_path"
+
+    if post_error=$(
+      gh pr review "$pull_request_url" \
+        --comment \
+        --body "$posted_review" \
+        2>&1
+    ); then
+      printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
+    else
+      printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
+        "$review_path" >&2
+      printf '%s\n' "$post_error" >&2
+    fi
+  fi
+else
+  printf 'PR review post: not requested\n' >&2
+fi
 
 printf '%s\n' "$review_path"
