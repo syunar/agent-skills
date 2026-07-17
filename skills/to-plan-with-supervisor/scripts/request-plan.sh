@@ -79,7 +79,7 @@ EOF
 request=$(jq -n \
   --arg model "$SUPERVISOR_MODEL" \
   --arg prompt "$prompt" \
-  '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
+  '{model: $model, messages: [{role: "user", content: $prompt}], stream: false}')
 
 printf 'API URL: %s\nAPI key: %s****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
   "$SUPERVISOR_API_URL" "${SUPERVISOR_API_KEY:0:4}" "$SUPERVISOR_MODEL" "$plan_path" "$prompt" >&2
