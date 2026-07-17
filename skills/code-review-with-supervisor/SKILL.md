@@ -25,7 +25,7 @@ https://github.com/<owner>/<repo>/issues/<number>
 https://github.com/<owner>/<repo>/pull/<number>
 ```
 
-If either reference is malformed, ask for valid URLs. If no issue URL is provided, the review will be performed against the pull request alone. The supervisor resolves `@github` and `@review.md`; do not search this repository for `review.md` or duplicate the issue and pull-request contents in the prompt.
+If either reference is malformed, ask for valid URLs. If no issue URL is provided, the review will be performed against the pull request alone. The supervisor resolves `@review.md` and uses the GitHub plugin; do not search this repository for `review.md` or duplicate the issue and pull-request contents in the prompt.
 
 Completion criterion: one public GitHub pull-request URL and, when supplied, one public GitHub issue URL are available.
 
@@ -81,7 +81,7 @@ The helper:
 1. Parses the optional `--no-post` flag before the URL arguments.
 2. Resolves the PR title and derives `.scratch/<slug>/reviews/pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews. If `gh` cannot resolve the title, it uses a repository-and-PR-number slug.
 3. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
-4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@github`, `@review.md`, the available references, their repository URLs, and the destination path to that configured supervisor.
+4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@review.md`, the available references, their owner/repo, and the destination path to that configured supervisor.
 5. Waits up to 30 minutes for a non-streaming response.
 6. Extracts and trims the supervisor's complete non-empty review response.
 7. Atomically writes the review without overwriting an existing file.

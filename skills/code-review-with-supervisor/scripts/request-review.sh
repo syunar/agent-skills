@@ -21,10 +21,6 @@ case $# in
       printf 'Error: expected issue URL https://github.com/<owner>/<repo>/issues/<number>\n' >&2
       exit 2
     fi
-    issue_owner=${BASH_REMATCH[1]}
-    issue_repo=${BASH_REMATCH[2]}
-    ticket_number=${BASH_REMATCH[3]}
-    issue_repo_url="https://github.com/${issue_owner}/${issue_repo}"
     ;;
   *)
     printf 'Usage: %s [--no-post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
@@ -39,7 +35,6 @@ fi
 pr_owner=${BASH_REMATCH[1]}
 pr_repo=${BASH_REMATCH[2]}
 pr_number=${BASH_REMATCH[3]}
-pr_repo_url="https://github.com/${pr_owner}/${pr_repo}"
 
 for command in curl jq; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -98,19 +93,15 @@ trap 'rm -f "$review_path"' EXIT
 
 if [[ -n $issue_url ]]; then
   prompt=$(cat <<EOF
-@github @review.md
+@review.md
 
-Use the review skill to review this pull request against its originating ticket.
+Use the GitHub plugin to review this pull request against its originating ticket.
 
-Originating ticket:
-${issue_url}
+Repository: ${pr_owner}/${pr_repo}
+Originating ticket: ${issue_url}
+Pull request: ${pull_request_url}
 
-Pull request:
-${pull_request_url}
-
-Inspect the repositories, current code, complete pull-request diff, discussion, checks, ticket body, and ticket comments:
-${issue_repo_url}
-${pr_repo_url}
+Use the GitHub plugin to inspect the repositories, current code, complete pull-request diff, discussion, checks, ticket body, and ticket comments.
 
 The caller will save the result to:
 ${review_path}
@@ -120,15 +111,14 @@ EOF
 )
 else
   prompt=$(cat <<EOF
-@github @review.md
+@review.md
 
-Review this pull request.
+Use the GitHub plugin to review this pull request.
 
-Pull request:
-${pull_request_url}
+Repository: ${pr_owner}/${pr_repo}
+Pull request: ${pull_request_url}
 
-Inspect the repository, current code, complete pull-request diff, discussion, and checks:
-${pr_repo_url}
+Use the GitHub plugin to inspect the repository, current code, complete pull-request diff, discussion, and checks.
 
 The caller will save the result to:
 ${review_path}
