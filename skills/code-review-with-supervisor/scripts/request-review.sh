@@ -150,7 +150,11 @@ if ! response=$(curl -sS --fail-with-body \
 fi
 printf 'Request time: %ss\n' "$((SECONDS - request_started_at))" >&2
 
-if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and length > 0)' <<<"$response"); then
+temporary_path=$(mktemp "${review_path}.tmp.XXXXXX")
+trap 'rm -f "$temporary_path" "$review_path"' EXIT
+
+if ! jq -er '.choices[0].message.content | select(type == "string" and length > 0)' <<<"$response" >"$temporary_path"; then
+  rm -f "$temporary_path"
   api_error=$(jq -r '.error.message // "missing choices[0].message.content"' <<<"$response" 2>/dev/null || true)
   api_error_redacted=${api_error//"${SUPERVISOR_API_KEY}"/"***"}
   printf \
@@ -162,11 +166,10 @@ if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and 
   exit 1
 fi
 
-temporary_path=$(mktemp "${review_path}.tmp.XXXXXX")
-trap 'rm -f "$temporary_path" "$review_path"' EXIT
-printf '%s\n' "$review" >"$temporary_path"
 mv "$temporary_path" "$review_path"
 trap - EXIT
+
+review=$(<"$review_path")
 
 if [[ $no_post == true ]]; then
   printf 'PR review post: skipped (--no-post)\n' >&2
