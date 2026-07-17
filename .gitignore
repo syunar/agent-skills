@@ -1,3 +1,4 @@
 .DS_Store
 .claude/worktrees/
+.opencode/worktree.jsonc
 .scratch/
