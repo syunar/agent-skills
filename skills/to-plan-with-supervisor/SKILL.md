@@ -18,7 +18,7 @@ npx skills@latest add syunar/agent-skills --skill supervisor --skill to-plan-wit
 
 Treat the invocation argument as one public GitHub issue URL. If it is missing or is not an `https://github.com/<owner>/<repo>/issues/<number>` URL, ask for that URL.
 
-The supervisor resolves `@github` and `@to-plan.md`, then fetches the ticket and its parent spec. Do not duplicate their contents in the prompt.
+The supervisor resolves `@to-plan.md` and uses the GitHub plugin to fetch the ticket and its parent spec. Do not duplicate their contents in the prompt.
 
 Completion criterion: one public GitHub issue URL is available.
 
@@ -63,7 +63,7 @@ The helper:
 
 1. Resolves the ticket title and derives `.scratch/<ticket-slug>/plans/<ticket-number>-<ticket-slug>.md`, adding a numeric run suffix when needed to preserve existing plans.
 2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
-3. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@github`, `@to-plan.md`, the ticket URL, repository URL, and exact destination path to that configured supervisor.
+3. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@to-plan.md`, the ticket URL, owner/repo, and exact destination path to that configured supervisor.
 4. Waits up to 30 minutes for a non-streaming response.
 5. Extracts the implementation-plan Markdown from the response.
 6. Atomically writes the plan without overwriting an existing file.

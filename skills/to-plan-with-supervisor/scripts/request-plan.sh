@@ -17,7 +17,6 @@ fi
 owner=${BASH_REMATCH[1]}
 repo=${BASH_REMATCH[2]}
 ticket_number=${BASH_REMATCH[3]}
-repo_url="https://github.com/${owner}/${repo}"
 
 for command in curl gh jq; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -57,13 +56,10 @@ done
 trap 'rm -f "$plan_path"' EXIT
 
 prompt=$(cat <<EOF
-@github @to-plan.md
+@to-plan.md
 
-Use the to-plan skill to create one executable implementation plan for this ticket:
+Use the GitHub plugin to fetch this ticket and inspect the repository ${owner}/${repo}. Create one executable implementation plan for:
 ${ticket_url}
-
-Inspect its repository and current code:
-${repo_url}
 
 The caller will save the result to:
 ${plan_path}
