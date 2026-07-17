@@ -1,0 +1,5 @@
+interface:
+  display_name: "To Plan With Supervisor"
+  short_description: "Delegate ticket planning to the supervisor"
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Code Review With Supervisor"
+  short_description: "Delegate PR review to the supervisor"
+policy:
+  allow_implicit_invocation: false
