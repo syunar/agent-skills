@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Plain Bash test runner (not bats). Per the decision recorded in the issue
+# resolution comment at https://github.com/syunar/agent-skills/issues/7#issuecomment-5002767213
+# the plan chose a dependency-free bash runner — bats is not required.
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)
