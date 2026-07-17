@@ -5,22 +5,30 @@ readonly API_URL="http://127.0.0.1:8000/v1/chat/completions"
 readonly API_KEY="local-dev-key"
 readonly MODEL="gpt-5-6-thinking-extended"
 
-if [[ $# -ne 2 ]]; then
-  printf 'Usage: %s <github-issue-url> <github-pull-request-url>\n' "$0" >&2
-  exit 2
-fi
+printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
-issue_url=${1%/}
-pull_request_url=${2%/}
-
-if [[ ! $issue_url =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)$ ]]; then
-  printf 'Error: expected issue URL https://github.com/<owner>/<repo>/issues/<number>\n' >&2
-  exit 2
-fi
-issue_owner=${BASH_REMATCH[1]}
-issue_repo=${BASH_REMATCH[2]}
-ticket_number=${BASH_REMATCH[3]}
-issue_repo_url="https://github.com/${issue_owner}/${issue_repo}"
+case $# in
+  1)
+    pull_request_url=${1%/}
+    issue_url=
+    ;;
+  2)
+    issue_url=${1%/}
+    pull_request_url=${2%/}
+    if [[ ! $issue_url =~ ^https://github\.com/([^/]+)/([^/]+)/issues/([0-9]+)$ ]]; then
+      printf 'Error: expected issue URL https://github.com/<owner>/<repo>/issues/<number>\n' >&2
+      exit 2
+    fi
+    issue_owner=${BASH_REMATCH[1]}
+    issue_repo=${BASH_REMATCH[2]}
+    ticket_number=${BASH_REMATCH[3]}
+    issue_repo_url="https://github.com/${issue_owner}/${issue_repo}"
+    ;;
+  *)
+    printf 'Usage: %s [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    exit 2
+    ;;
+esac
 
 if [[ ! $pull_request_url =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)$ ]]; then
   printf 'Error: expected pull request URL https://github.com/<owner>/<repo>/pull/<number>\n' >&2
@@ -38,23 +46,28 @@ for command in curl gh jq; do
   fi
 done
 
-ticket_title=$(gh issue view "$issue_url" --json title --jq .title)
-ticket_slug=$(printf '%s' "$ticket_title" \
+pr_title=$(gh pr view "$pull_request_url" --json title --jq .title)
+review_slug=$(printf '%s' "$pr_title" \
   | tr '[:upper:]' '[:lower:]' \
   | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
 
-if [[ -z $ticket_slug ]]; then
-  printf 'Error: could not derive an artifact slug from issue title: %s\n' "$ticket_title" >&2
+if [[ -z $review_slug ]]; then
+  printf 'Error: could not derive an artifact slug from PR title: %s\n' "$pr_title" >&2
   exit 1
 fi
 
-review_path=".scratch/${ticket_slug}/reviews/${ticket_number}-pr-${pr_number}-code-review.md"
-if [[ -e $review_path ]]; then
-  printf 'Error: review already exists: %s\n' "$review_path" >&2
-  exit 1
-fi
+review_directory=".scratch/${review_slug}/reviews"
+mkdir -p "$review_directory"
+review_path="${review_directory}/pr-${pr_number}-code-review.md"
+run_number=2
+while ! (set -o noclobber; : >"$review_path") 2>/dev/null; do
+  review_path="${review_directory}/pr-${pr_number}-code-review-${run_number}.md"
+  ((run_number += 1))
+done
+trap 'rm -f "$review_path"' EXIT
 
-prompt=$(cat <<EOF
+if [[ -n $issue_url ]]; then
+  prompt=$(cat <<EOF
 @github @review.md
 
 Use the review skill to review this pull request against its originating ticket.
@@ -75,12 +88,35 @@ ${review_path}
 Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
 EOF
 )
+else
+  prompt=$(cat <<EOF
+@github @review.md
+
+Review this pull request.
+
+Pull request:
+${pull_request_url}
+
+Inspect the repository, current code, complete pull-request diff, discussion, and checks:
+${pr_repo_url}
+
+The caller will save the result to:
+${review_path}
+
+Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+EOF
+)
+fi
 
 request=$(jq -n \
   --arg model "$MODEL" \
   --arg prompt "$prompt" \
   '{model: $model, messages: [{role: "user", content: $prompt}], stream: false, metadata: {"chatgpt_temporary_chat": false}}')
 
+printf 'API URL: %s\nAPI key: %s****\nModel: %s\nOutput: %s\nInput prompt:\n%s\n\n' \
+  "$API_URL" "${API_KEY:0:4}" "$MODEL" "$review_path" "$prompt" >&2
+
+request_started_at=$SECONDS
 if ! response=$(curl -sS --fail-with-body \
   --connect-timeout 15 \
   --max-time 1800 \
@@ -88,9 +124,10 @@ if ! response=$(curl -sS --fail-with-body \
   -H "Authorization: Bearer ${API_KEY}" \
   -H 'Content-Type: application/json' \
   -d "$request"); then
-  printf 'Error: supervisor request failed\n' >&2
+  printf 'Request time: %ss\nError: supervisor request failed\n' "$((SECONDS - request_started_at))" >&2
   exit 1
 fi
+printf 'Request time: %ss\n' "$((SECONDS - request_started_at))" >&2
 
 if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and length > 0)' <<<"$response"); then
   api_error=$(jq -r '.error.message // "missing choices[0].message.content"' <<<"$response" 2>/dev/null || true)
@@ -98,9 +135,8 @@ if ! review=$(jq -er '.choices[0].message.content | select(type == "string" and 
   exit 1
 fi
 
-mkdir -p "$(dirname "$review_path")"
 temporary_path=$(mktemp "${review_path}.tmp.XXXXXX")
-trap 'rm -f "$temporary_path"' EXIT
+trap 'rm -f "$temporary_path" "$review_path"' EXIT
 printf '%s\n' "$review" >"$temporary_path"
 mv "$temporary_path" "$review_path"
 trap - EXIT

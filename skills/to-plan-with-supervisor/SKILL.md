@@ -26,11 +26,12 @@ bash skills/to-plan-with-supervisor/scripts/request-plan.sh '<ticket-url>'
 
 The helper:
 
-1. Resolves the ticket title and derives `.scratch/<ticket-slug>/plans/<ticket-number>-<ticket-slug>.md`.
-2. Sends `@github`, `@to-plan.md`, the ticket URL, repository URL, and exact destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
-3. Waits up to 30 minutes for a non-streaming response.
-4. Extracts the implementation-plan Markdown from the response.
-5. Atomically writes the plan without overwriting an existing file.
+1. Resolves the ticket title and derives `.scratch/<ticket-slug>/plans/<ticket-number>-<ticket-slug>.md`, adding a numeric run suffix when needed to preserve existing plans.
+2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
+3. Sends `@github`, `@to-plan.md`, the ticket URL, repository URL, and exact destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
+4. Waits up to 30 minutes for a non-streaming response.
+5. Extracts the implementation-plan Markdown from the response.
+6. Atomically writes the plan without overwriting an existing file.
 
 If the API request or response extraction fails, report its error and leave the filesystem unchanged. Do not replace the supervisor response with a locally authored plan.
 
