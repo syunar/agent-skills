@@ -8,6 +8,12 @@ disable-model-invocation: true
 
 Delegate a pull-request review to the supervisor model, save its Markdown response as a local review artifact, and post a comment-level review to the pull request by default.
 
+**Requires the `supervisor` skill to be installed alongside this skill.** Install both together:
+
+```bash
+npx skills@latest add syunar/agent-skills --skill supervisor --skill code-review-with-supervisor
+```
+
 ## 1. Validate the references
 
 After an optional leading `--no-post`, provide either a pull-request URL alone, or an issue URL followed by a pull-request URL.
@@ -22,6 +28,35 @@ https://github.com/<owner>/<repo>/pull/<number>
 If either reference is malformed, ask for valid URLs. If no issue URL is provided, the review will be performed against the pull request alone. The supervisor resolves `@github` and `@review.md`; do not search this repository for `review.md` or duplicate the issue and pull-request contents in the prompt.
 
 Completion criterion: one public GitHub pull-request URL and, when supplied, one public GitHub issue URL are available.
+
+### Supervisor configuration
+
+The helper reads the merged OpenCode configuration through:
+
+```bash
+opencode debug config
+```
+
+The supervisor configuration must be nested under `provider.supervisor.options` because OpenCode's config validator rejects unknown top-level keys:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "supervisor": {
+      "options": {
+        "baseUrl": "http://127.0.0.1:8000",
+        "apiKey": "<required-api-key>",
+        "model": "gpt-5-6-thinking-extended"
+      }
+    }
+  }
+}
+```
+
+Place this in the global file at `~/.config/opencode/opencode.json`, or in a project-root `opencode.jsonc` to override it per-project. `baseUrl`, `apiKey`, and `model` are required. `baseUrl` is the server root; the helper appends `/v1/chat/completions`. No endpoint, credential, or model default is stored in this repository.
+
+When the `opencode` command is unavailable, the helper falls back to the JSON file at `$XDG_CONFIG_HOME/opencode/opencode.json` or `~/.config/opencode/opencode.json`. That fallback requires strict JSON rather than JSONC.
 
 ## 2. Request and save the review
 
@@ -46,7 +81,7 @@ The helper:
 1. Parses the optional `--no-post` flag before the URL arguments.
 2. Resolves the PR title and derives `.scratch/<slug>/reviews/pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews. If `gh` cannot resolve the title, it uses a repository-and-PR-number slug.
 3. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
-4. Sends `@github`, `@review.md`, the available references, their repository URLs, and the destination path to `gpt-5-6-thinking-extended` at the local supervisor API.
+4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@github`, `@review.md`, the available references, their repository URLs, and the destination path to that configured supervisor.
 5. Waits up to 30 minutes for a non-streaming response.
 6. Extracts and trims the supervisor's complete non-empty review response.
 7. Atomically writes the review without overwriting an existing file.

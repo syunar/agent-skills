@@ -54,10 +54,11 @@ npx skills@latest add syunar/agent-skills --skill tdd --agent opencode --global 
 | `resolving-merge-conflicts` | Use when you need to resolve an in-progress git merge/rebase conflict. |
 | `scrutinize` | Outsider-perspective end-to-end review of a plan, PR, or code change. First questions intent and whether a simpler/more elegant approach would achieve the same goal, then traces the actual code path (not just the diff) to verify the change does what it claims. Output is concise, actionable, and every call carries its rationale. Trigger on /scrutinize and proactively whenever the user asks to review, audit, sanity-check, or get a second opinion on a plan, PR, diff, design doc, or proposed code change. |
 | `setup-matt-pocock-skills` | Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills. |
+| `supervisor` | Shared library for supervisor-dependent skills. Required by `to-plan-with-supervisor` and `code-review-with-supervisor`. Not a standalone skill. |
 | `tdd` | Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests. |
 | `teach` | Teach the user a new skill or concept, within this workspace. |
 | `to-plan` | Turn one ticket and its parent spec into a local executable implementation plan. |
-| `to-plan-with-supervisor` | Ask the supervisor model to turn one public GitHub ticket into a local executable implementation plan. |
+| `to-plan-with-supervisor` | Ask the supervisor model to turn one public GitHub ticket into a local executable implementation plan. Requires `supervisor`. |
 | `to-spec` | Turn the current conversation into a spec and publish it to the project issue tracker — no interview, just synthesis of what you've already discussed. |
 | `to-tickets` | Break a plan, spec, or the current conversation into a set of tracer-bullet tickets, each declaring its blocking edges, published to the configured tracker — edges as text in one file per ticket locally, or native blocking links on a real tracker. |
 | `triage` | Move issues and external PRs through a state machine of triage roles — categorise, verify, grill if needed, and write agent-ready briefs. |
