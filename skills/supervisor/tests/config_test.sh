@@ -399,7 +399,7 @@ if [[ $1 == "pr" && $2 == "review" ]]; then
     shift 3
     while [[ $# -gt 0 ]]; do
       if [[ $1 == "--body" && $# -ge 2 ]]; then
-        printf '%s\n' "$2" >"$body_capture"
+        printf '%s' "$2" >"$body_capture"
         break
       fi
       shift
@@ -639,7 +639,7 @@ test_review_helper_preserves_whitespace() {
     MOCK_PR_TITLE="Whitespace Review PR" \
     MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
     MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n  # Code Review\n  \nNo findings.  \n  "}}]}' \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review\n\nNo findings.\n\n"}}]}' \
       "$bash_bin" "$review_script" \
         "https://github.com/acme/example/issues/98" \
         "https://github.com/acme/example/pull/99"
@@ -648,29 +648,30 @@ test_review_helper_preserves_whitespace() {
   review_path="$worktree/.scratch/whitespace-review-pr/reviews/pr-99-code-review.md"
 
   if [[ ! -f $review_path ]]; then
-    fail "review helper should write the file with whitespace content"
+    fail "review helper should write the file"
   fi
 
+  raw_file=$(cat "$review_path"; printf x)
+  raw_file=${raw_file%x}
+
   assert_equal \
-    $'  \n  # Code Review\n  \nNo findings.  \n  ' \
-    "$(<"$review_path")" \
-    "review helper should preserve leading and trailing whitespace in file"
+    $'# Code Review\n\nNo findings.\n\n\n' \
+    "$raw_file" \
+    "file should preserve all original trailing newlines plus jq output newline"
 
   if [[ ! -f $body_capture ]]; then
     fail "review helper should have posted a review"
   fi
 
-  assert_contains \
-    "$(<"$body_capture")" \
-    $'  \n  # Code Review\n  \nNo findings.  \n  ' \
-    "posted review should contain the whitespace-preserved content"
+  raw_body=$(cat "$body_capture"; printf x)
+  raw_body=${raw_body%x}
 
-  assert_contains \
-    "$(<"$body_capture")" \
-    "*Full review saved to:" \
-    "posted review should contain the artifact-path footer"
+  assert_equal \
+    $'# Code Review\n\nNo findings.\n\n\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
+    "$raw_body" \
+    "posted body should equal supervisor content plus footer"
 
-  pass "review helper preserves whitespace-wrapped content and posts it correctly"
+  pass "review helper preserves trailing newlines in file and posted body"
 }
 
 test_request_failure_diagnostic_is_useful_and_secret_safe() {
