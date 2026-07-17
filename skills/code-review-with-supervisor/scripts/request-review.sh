@@ -169,7 +169,8 @@ fi
 mv "$temporary_path" "$review_path"
 trap - EXIT
 
-review=$(<"$review_path")
+review=$(cat "$review_path"; printf x)
+review=${review%x}
 
 if [[ $no_post == true ]]; then
   printf 'PR review post: skipped (--no-post)\n' >&2
