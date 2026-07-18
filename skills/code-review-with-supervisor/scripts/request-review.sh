@@ -215,23 +215,27 @@ else
       function heading(line, marker, indent) {
         if (line ~ /["},][[:space:]]*$/) return 0
         match(line, /^[ ]*#+[[:space:]]+/)
-        if (!RLENGTH) return 0
+        if (RLENGTH <= 0) return 0
         marker = substr(line, RSTART, RLENGTH)
         match(marker, /[^ ]/)
         indent = RSTART - 1
         gsub(/[[:space:]]/, "", marker)
         return indent <= 3 && length(marker) <= 6
       }
-      BEGIN { prefix = "^\",\"start_line\":[0-9]+,\"(num|num_lines)\"" }
-      !found && match($0, prefix) {
+      BEGIN { prefix = "^\",\"start_line\":[0-9]+,\"(num|num_lines)\"[[:space:]]*" }
+      !found && !recognized && match($0, prefix) {
         rest = substr($0, RLENGTH + 1)
         if (rest == "") { recognized = 1; next }
         if (heading(rest)) { found = 1; print rest; next }
-        next
+        invalid = 1; next
       }
+      invalid { next }
+      recognized && !found && /^[[:space:]]*$/ { next }
       recognized && !found && heading($0) { found = 1 }
+      recognized && !found { invalid = 1; next }
       found { print }
-    ' "$review_path")
+      END { if (invalid || !found) exit 1 }
+    ' "$review_path" || true)
   fi
   if [[ -z $review_to_post ]]; then
     review_to_post=$review
