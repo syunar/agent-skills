@@ -402,6 +402,10 @@ if [[ $1 == "pr" && $2 == "review" ]]; then
         printf '%s' "$2" >"$body_capture"
         break
       fi
+      if [[ $1 == "--body-file" && ${2:-} == "-" ]]; then
+        cat >"$body_capture"
+        break
+      fi
       shift
     done
   fi
@@ -410,6 +414,18 @@ fi
 
 printf 'Unexpected gh arguments: %s\n' "$*" >&2
 exit 64
+EOF
+
+  cat >"$mock_bin/awk" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ${MOCK_AWK_FAIL:-0} == 1 ]]; then
+  printf '%s' "${MOCK_AWK_PARTIAL:-}"
+  exit 1
+fi
+
+exec /usr/bin/awk "$@"
 EOF
 
   cat >"$mock_bin/curl" <<'EOF'
@@ -428,6 +444,7 @@ EOF
   chmod +x \
     "$mock_bin/opencode" \
     "$mock_bin/gh" \
+    "$mock_bin/awk" \
     "$mock_bin/curl"
 }
 
@@ -577,6 +594,7 @@ test_review_helper_uses_shared_config() {
     MOCK_CURL_CAPTURE="$curl_capture" \
     MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review\n\nNo findings."}}]}' \
       "$bash_bin" "$review_script" \
+        --additional-context "Check shell compatibility." \
         "https://github.com/acme/example/issues/43" \
         "https://github.com/acme/example/pull/9"
   )
@@ -613,6 +631,16 @@ test_review_helper_uses_shared_config() {
     '"model": "review-model"' \
     "review helper should use the configured model"
 
+  assert_contains \
+    "$curl_arguments" \
+    "Additional context:" \
+    "review helper should append additional context"
+
+  assert_contains \
+    "$curl_arguments" \
+    "Check shell compatibility." \
+    "review helper should preserve additional context"
+
   pass "review helper uses shared supervisor configuration"
 }
 
@@ -642,7 +670,7 @@ test_review_helper_preserves_whitespace() {
     MOCK_PR_TITLE="Whitespace Review PR" \
     MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
     MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n\n# Code Review\n\nNo findings.\n\n"}}]}' \
+    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"  \n\n# No Findings\n\nNo findings.\n\n"}}]}' \
       "$bash_bin" "$review_script" \
         "https://github.com/acme/example/issues/98" \
         "https://github.com/acme/example/pull/99"
@@ -658,7 +686,7 @@ test_review_helper_preserves_whitespace() {
   raw_file=${raw_file%x}
 
   assert_equal \
-    $'  \n\n# Code Review\n\nNo findings.\n\n\n' \
+    $'  \n\n# No Findings\n\nNo findings.\n\n\n' \
     "$raw_file" \
     "file should preserve leading whitespace and trailing newlines"
 
@@ -670,109 +698,86 @@ test_review_helper_preserves_whitespace() {
   raw_body=${raw_body%x}
 
   assert_equal \
-    $'  \n\n# Code Review\n\nNo findings.\n\n\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
+    $'  \n\n# No Findings\n\nNo findings.\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
     "$raw_body" \
-    "posted body should preserve leading whitespace and trailing newlines plus footer"
+    "posted body should preserve the review exactly before the footer"
 
   pass "review helper preserves trailing newlines in file and posted body"
 }
 
-test_plan_helper_appends_additional_context() {
-  local fixture="$temporary_root/helper-plan-context-config.json"
-  local mock_bin="$temporary_root/helper-plan-context-bin"
-  local worktree="$temporary_root/helper-plan-context-worktree"
-  local curl_capture="$temporary_root/helper-plan-context-curl.txt"
-  local curl_arguments
+test_review_helper_posts_without_heading_contract() {
+  local fixture="$temporary_root/helper-review-contract-config.json"
+  local mock_bin="$temporary_root/helper-review-contract-bin"
+  local curl_capture="$temporary_root/helper-review-contract-curl.txt"
+  local case_number=0
 
   write_config \
     "$fixture" \
-    "http://supervisor.test:9000" \
-    "test-api-key" \
-    "test-model"
-
+    "http://review-supervisor.test:9100/" \
+    "review-api-key" \
+    "review-model"
   make_helper_mock_bin "$mock_bin"
-  mkdir -p "$worktree"
 
-  (
-    cd "$worktree"
-    PATH="$mock_bin:$PATH" \
-    MOCK_OPENCODE_CONFIG="$fixture" \
-    MOCK_GH_TITLE="Context Ticket" \
-    MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Implementation Plan"}}]}' \
-      "$bash_bin" "$plan_script" \
-        --additional-context "Prioritize backward compatibility." \
-        "https://github.com/acme/example/issues/46" \
-        >/dev/null
-  )
+  run_case() {
+    local content=$1
+    local expected_post=$2
+    local awk_fail=${3:-0}
+    local awk_partial=${4:-}
+    local worktree="$temporary_root/helper-review-contract-$case_number"
+    local body_capture="$temporary_root/helper-review-contract-body-$case_number.txt"
+    local response
+    local output
 
-  curl_arguments=$(<"$curl_capture")
-  assert_contains \
-    "$curl_arguments" \
-    'Additional context:\nPrioritize backward compatibility.' \
-    "plan helper should append additional context to the prompt"
+    ((case_number += 1)) || true
+    mkdir -p "$worktree"
+    response=$(jq -cn --arg content "$content" '{choices:[{message:{content:$content}}]}')
+    output=$(
+      cd "$worktree"
+      PATH="$mock_bin:$PATH" \
+      MOCK_OPENCODE_CONFIG="$fixture" \
+      MOCK_PR_TITLE="Contract Review $case_number" \
+      MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
+      MOCK_AWK_FAIL="$awk_fail" \
+      MOCK_AWK_PARTIAL="$awk_partial" \
+      MOCK_CURL_CAPTURE="$curl_capture" \
+      MOCK_CURL_RESPONSE="$response" \
+        "$bash_bin" "$review_script" \
+          "https://github.com/acme/example/pull/$case_number" 2>&1
+    )
 
-  pass "plan helper appends additional context"
-}
+    assert_contains \
+      "$output" \
+      ".scratch/contract-review-$case_number/reviews/pr-$case_number-code-review.md" \
+      "review helper should print the artifact path"
 
-test_review_helper_appends_context_with_no_post() {
-  local fixture="$temporary_root/helper-review-context-config.json"
-  local mock_bin="$temporary_root/helper-review-context-bin"
-  local worktree="$temporary_root/helper-review-context-worktree"
-  local curl_capture="$temporary_root/helper-review-context-curl.txt"
-  local output
-  local curl_arguments
+    if [[ ! -f $body_capture ]]; then
+      fail "every non-empty review should be posted"
+    fi
+    posted_body=$(<"$body_capture")
+    assert_equal \
+      "$expected_post" \
+      "${posted_body%%$'\n\n---\n'*}" \
+      "posted review should exactly preserve content after best-effort prefix cleanup"
+  }
 
-  write_config \
-    "$fixture" \
-    "http://supervisor.test:9000" \
-    "test-api-key" \
-    "test-model"
+  run_case '","start_line":4350,"num"# Findings' '# Findings'
+  run_case $'\",\"start_line\":4350,\"num\"\n# Findings\n\nReview.' $'# Findings\n\nReview.'
+  run_case '","start_line":4350,"num"## [P1] Finding' '## [P1] Finding'
+  run_case '","start_line":4350,"num"### Findings' '### Findings'
+  run_case $'"start_line" is handled correctly here.\n\n## Finding' $'"start_line" is handled correctly here.\n\n## Finding'
+  run_case $'","start_line" is quoted prose.\n\n## Finding' $'","start_line" is quoted prose.\n\n## Finding'
+  run_case $'","start_line":4350,"num" note: use # example\n## Finding' $'","start_line":4350,"num" note: use # example\n## Finding'
+  run_case $'","start_line":4350,"num"\nordinary prose\n## Finding' $'","start_line":4350,"num"\nordinary prose\n## Finding'
+  run_case $'","start_line":4350,"num"\nIntroduction,\n## Finding' $'","start_line":4350,"num"\nIntroduction,\n## Finding'
+  run_case $'","start_line":4350,"num"   \n \n\t\n## Finding' '## Finding'
+  run_case '","start_line":4350,"num"## Finding"}' '","start_line":4350,"num"## Finding"}'
+  run_case $'# Findings\n\n{"start_line":4350,"num":1}' $'# Findings\n\n{"start_line":4350,"num":1}'
+  run_case 'No findings.' 'No findings.'
+  run_case '{}' '{}'
+  run_case '","start_line":4350,"num"# Findings' '","start_line":4350,"num"# Findings' 1
+  run_case '","start_line":4350,"num"# Findings' '","start_line":4350,"num"# Findings' 1 'partial'
 
-  make_helper_mock_bin "$mock_bin"
-  mkdir -p "$worktree"
-
-  output=$(
-    cd "$worktree"
-    PATH="$mock_bin:$PATH" \
-    MOCK_OPENCODE_CONFIG="$fixture" \
-    MOCK_PR_TITLE="Context Review" \
-    MOCK_CURL_CAPTURE="$curl_capture" \
-    MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review"}}]}' \
-      "$bash_bin" "$review_script" \
-        --no-post \
-        --additional-context "Focus on shell argument safety." \
-        "https://github.com/acme/example/pull/10" \
-        2>&1
-  )
-
-  curl_arguments=$(<"$curl_capture")
-  assert_contains \
-    "$curl_arguments" \
-    'Additional context:\nFocus on shell argument safety.' \
-    "review helper should append additional context to the prompt"
-  assert_contains \
-    "$output" \
-    "PR review post: skipped (--no-post)" \
-    "additional context should coexist with --no-post"
-
-  pass "review helper appends context with no-post"
-}
-
-test_helpers_reject_missing_or_empty_additional_context() {
-  local output
-
-  if output=$("$bash_bin" "$plan_script" --additional-context 2>&1); then
-    fail "plan helper should reject a missing additional context value"
-  fi
-  assert_contains "$output" "Usage:" "missing plan context should print usage"
-
-  if output=$("$bash_bin" "$review_script" --additional-context "" "https://github.com/acme/example/pull/10" 2>&1); then
-    fail "review helper should reject an empty additional context value"
-  fi
-  assert_contains "$output" "Usage:" "empty review context should print usage"
-
-  pass "helpers reject missing or empty additional context"
+  pass "review helper posts without a heading contract"
 }
 
 test_request_failure_diagnostic_is_useful_and_secret_safe() {
@@ -903,9 +908,7 @@ main() {
   test_plan_helper_without_heading
   test_review_helper_uses_shared_config
   test_review_helper_preserves_whitespace
-  test_plan_helper_appends_additional_context
-  test_review_helper_appends_context_with_no_post
-  test_helpers_reject_missing_or_empty_additional_context
+  test_review_helper_posts_without_heading_contract
   test_request_failure_diagnostic_is_useful_and_secret_safe
   test_invalid_response_redacts_api_key
 

@@ -127,7 +127,7 @@ Use the GitHub plugin to inspect the repositories, current code, complete pull-r
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
 else
@@ -144,7 +144,7 @@ Use the GitHub plugin to inspect the repository, current code, complete pull-req
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
 fi
@@ -196,22 +196,66 @@ trap - EXIT
 
 review=$(cat "$review_path"; printf x)
 review=${review%x}
-review=${review%$'\n'}
+while [[ $review == *$'\n' ]]; do
+  review=${review%$'\n'}
+done
 
 if [[ $no_post == true ]]; then
   printf 'PR review post: skipped (--no-post)\n' >&2
 elif [[ $gh_available != true ]]; then
   printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
 else
-  printf -v posted_review \
-    '%s\n\n---\n*Full review saved to: `%s`*' \
-    "$review" \
-    "$review_path"
+  # Best effort only: remove a malformed prefix when a Markdown heading gives
+  # us an unambiguous boundary. Never discard an expensive review response.
+  first_line=
+  while IFS= read -r line; do
+    if [[ -n ${line//[[:space:]]/} ]]; then
+      first_line=$line
+      break
+    fi
+  done <"$review_path"
+
+  review_to_post=
+  leak_prefix='","start_line":[0-9]+,"(num|num_lines)"'
+  if [[ $first_line =~ ^${leak_prefix}([[:space:]]*$|[[:space:]]{0,3}#{1,6}[[:space:]]+) ]] &&
+    cleaned_review=$(awk '
+      function heading(line, marker, indent) {
+        if (line ~ /["},][[:space:]]*$/) return 0
+        match(line, /^[ ]*#+[[:space:]]+/)
+        if (RLENGTH <= 0) return 0
+        marker = substr(line, RSTART, RLENGTH)
+        match(marker, /[^ ]/)
+        indent = RSTART - 1
+        gsub(/[[:space:]]/, "", marker)
+        return indent <= 3 && length(marker) <= 6
+      }
+      BEGIN { prefix = "^\",\"start_line\":[0-9]+,\"(num|num_lines)\"[[:space:]]*" }
+      !found && !recognized && match($0, prefix) {
+        rest = substr($0, RLENGTH + 1)
+        if (rest == "") { recognized = 1; next }
+        if (heading(rest)) { found = 1; print rest; next }
+        invalid = 1; next
+      }
+      invalid { next }
+      recognized && !found && /^[[:space:]]*$/ { next }
+      recognized && !found && heading($0) { found = 1 }
+      recognized && !found { invalid = 1; next }
+      found { print }
+      END { if (invalid || !found) exit 1 }
+    ' "$review_path"); then
+    review_to_post=$cleaned_review
+  fi
+  if [[ -z $review_to_post ]]; then
+    review_to_post=$review
+  fi
 
   if post_error=$(
+    printf '%s\n\n---\n*Full review saved to: `%s`*' \
+      "$review_to_post" \
+      "$review_path" |
     gh pr review "$pull_request_url" \
       --comment \
-      --body "$posted_review" \
+      --body-file - \
       2>&1
   ); then
     printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
