@@ -116,7 +116,7 @@ if [[ -n $issue_url ]]; then
   prompt=$(cat <<EOF
 @review.md
 
-Use the GitHub plugin to review this pull request against its originating ticket.
+First read and follow @review.md as the review skill. Then use the GitHub plugin to review this pull request against its originating ticket.
 
 Repository: ${pr_owner}/${pr_repo}
 Originating ticket: ${issue_url}
@@ -127,7 +127,7 @@ Use the GitHub plugin to inspect the repositories, current code, complete pull-r
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. For every finding, include a concrete suggested fix. When useful, also include an optional code change illustrating the fix. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
 else
@@ -144,7 +144,7 @@ Use the GitHub plugin to inspect the repository, current code, complete pull-req
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. For every finding, include a concrete suggested fix. When useful, also include an optional code change illustrating the fix. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
 fi
