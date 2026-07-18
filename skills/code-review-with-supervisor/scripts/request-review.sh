@@ -4,10 +4,31 @@ set -euo pipefail
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
 no_post=false
-if [[ ${1:-} == --no-post ]]; then
-  no_post=true
-  shift
-fi
+additional_context=
+while [[ ${1:-} == --* ]]; do
+  case $1 in
+    --no-post)
+      if [[ $no_post == true ]]; then
+        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+        exit 2
+      fi
+      no_post=true
+      shift
+      ;;
+    --additional-context)
+      if [[ -n $additional_context || $# -lt 2 || -z $2 || $2 == --* ]]; then
+        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+        exit 2
+      fi
+      additional_context=$2
+      shift 2
+      ;;
+    *)
+      printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+      exit 2
+      ;;
+  esac
+done
 
 case $# in
   1)
@@ -23,7 +44,7 @@ case $# in
     fi
     ;;
   *)
-    printf 'Usage: %s [--no-post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -128,6 +149,10 @@ EOF
 )
 fi
 
+if [[ -n $additional_context ]]; then
+  prompt+=$(printf '\n\nAdditional context:\n%s' "$additional_context")
+fi
+
 request=$(jq -n \
   --arg model "$SUPERVISOR_MODEL" \
   --arg prompt "$prompt" \
@@ -184,7 +209,7 @@ else
   # us an unambiguous boundary. Never discard an expensive review response.
   first_line=$(awk 'NF { print; exit }' "$review_path")
   review_to_post=
-  if [[ $first_line != '#'* && $first_line == *[\"{},:\[]* ]]; then
+  if [[ $first_line =~ ^[[:space:]\"{},:]*\"(start_line|end_line|original_line|num_lines|num)\" ]]; then
     review_to_post=$(awk '
       !found && match($0, /#[[:space:]]+[[:alnum:]][^#]*$/) { found = 1; $0 = substr($0, RSTART) }
       found { print }

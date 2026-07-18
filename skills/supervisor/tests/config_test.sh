@@ -581,6 +581,7 @@ test_review_helper_uses_shared_config() {
     MOCK_CURL_CAPTURE="$curl_capture" \
     MOCK_CURL_RESPONSE='{"choices":[{"message":{"content":"# Code Review\n\nNo findings."}}]}' \
       "$bash_bin" "$review_script" \
+        --additional-context "Check shell compatibility." \
         "https://github.com/acme/example/issues/43" \
         "https://github.com/acme/example/pull/9"
   )
@@ -616,6 +617,16 @@ test_review_helper_uses_shared_config() {
     "$curl_arguments" \
     '"model": "review-model"' \
     "review helper should use the configured model"
+
+  assert_contains \
+    "$curl_arguments" \
+    "Additional context:" \
+    "review helper should append additional context"
+
+  assert_contains \
+    "$curl_arguments" \
+    "Check shell compatibility." \
+    "review helper should preserve additional context"
 
   pass "review helper uses shared supervisor configuration"
 }
@@ -697,6 +708,7 @@ test_review_helper_posts_without_heading_contract() {
   run_case() {
     local content=$1
     local expected_post=$2
+    local removed_prefix=${3:-}
     local worktree="$temporary_root/helper-review-contract-$case_number"
     local body_capture="$temporary_root/helper-review-contract-body-$case_number.txt"
     local response
@@ -725,14 +737,21 @@ test_review_helper_posts_without_heading_contract() {
     if [[ ! -f $body_capture ]]; then
       fail "every non-empty review should be posted"
     fi
+    posted_body=$(<"$body_capture")
     assert_contains \
-      "$(<"$body_capture")" \
+      "$posted_body" \
       "$expected_post" \
       "posted review should preserve content after best-effort prefix cleanup"
+    if [[ -n $removed_prefix ]]; then
+      assert_not_contains \
+        "$posted_body" \
+        "$removed_prefix" \
+        "posted review should remove the exact malformed prefix"
+    fi
   }
 
-  run_case '","start_line":4350,"num"# Findings' '# Findings'
-  run_case $'\",\"start_line\":4350,\"num\"\n# Findings\n\nReview.' $'# Findings\n\nReview.'
+  run_case '","start_line":4350,"num"# Findings' '# Findings' 'start_line'
+  run_case $'\",\"start_line\":4350,\"num\"\n# Findings\n\nReview.' $'# Findings\n\nReview.' 'start_line'
   run_case $'# Findings\n\n{"start_line":4350,"num":1}' '{"start_line":4350,"num":1}'
   run_case 'No findings.' 'No findings.'
   run_case '{}' '{}'
