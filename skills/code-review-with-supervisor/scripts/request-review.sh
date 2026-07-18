@@ -209,9 +209,27 @@ else
   # us an unambiguous boundary. Never discard an expensive review response.
   first_line=$(awk 'NF { print; exit }' "$review_path")
   review_to_post=
-  if [[ $first_line =~ ^[[:space:]\"{}:]*,\"(start_line|end_line|original_line|num_lines|num)\" ]]; then
+  leak_prefix='","start_line":[0-9]+,"(num|num_lines)"'
+  if [[ $first_line =~ ^${leak_prefix}([[:space:]]*$|[[:space:]]{0,3}#{1,6}[[:space:]]+) ]]; then
     review_to_post=$(awk '
-      !found && match($0, /#+[[:space:]]+[^[:space:]]/) { found = 1; $0 = substr($0, RSTART) }
+      function heading(line, marker, indent) {
+        if (line ~ /["},][[:space:]]*$/) return 0
+        match(line, /^[ ]*#+[[:space:]]+/)
+        if (!RLENGTH) return 0
+        marker = substr(line, RSTART, RLENGTH)
+        match(marker, /[^ ]/)
+        indent = RSTART - 1
+        gsub(/[[:space:]]/, "", marker)
+        return indent <= 3 && length(marker) <= 6
+      }
+      BEGIN { prefix = "^\",\"start_line\":[0-9]+,\"(num|num_lines)\"" }
+      !found && match($0, prefix) {
+        rest = substr($0, RLENGTH + 1)
+        if (rest == "") { recognized = 1; next }
+        if (heading(rest)) { found = 1; print rest; next }
+        next
+      }
+      recognized && !found && heading($0) { found = 1 }
       found { print }
     ' "$review_path")
   fi
