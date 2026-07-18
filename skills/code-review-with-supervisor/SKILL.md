@@ -16,7 +16,7 @@ npx skills@latest add syunar/agent-skills --skill supervisor --skill code-review
 
 ## 1. Validate the references
 
-After an optional leading `--no-post`, provide either a pull-request URL alone, or an issue URL followed by a pull-request URL.
+After optional leading flags, provide either a pull-request URL alone, or an issue URL followed by a pull-request URL. Supported flags are `--no-post` and `--additional-context <text>`.
 
 Expected forms:
 
@@ -76,14 +76,20 @@ To save the review locally without posting:
 bash skills/code-review-with-supervisor/scripts/request-review.sh --no-post '<issue-url>' '<pull-request-url>'
 ```
 
-`--no-post` must be the first argument. The issue URL remains optional in both forms.
+To append situational guidance without replacing the core review prompt:
+
+```bash
+bash skills/code-review-with-supervisor/scripts/request-review.sh --additional-context '<text>' '<issue-url>' '<pull-request-url>'
+```
+
+Flags must precede URL arguments and may appear together in either order. `--additional-context` requires non-empty inline text. The issue URL remains optional in all forms.
 
 The helper:
 
-1. Parses the optional `--no-post` flag before the URL arguments.
+1. Parses optional `--no-post` and `--additional-context <text>` flags before the URL arguments.
 2. Resolves the PR title and derives `.scratch/<slug>/reviews/pr-<pr-number>-code-review.md`, adding a numeric run suffix when needed to preserve existing reviews. If `gh` cannot resolve the title, it uses a repository-and-PR-number slug.
 3. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
-4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@review.md`, the available references, their owner/repo, and the destination path to that configured supervisor.
+4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@review.md`, the available references, their owner/repo, the destination path, and any additional context to that configured supervisor.
 5. Waits up to 30 minutes for a non-streaming response.
 6. Extracts the supervisor's complete non-empty review response and saves it verbatim.
 7. Atomically writes the review without overwriting an existing file.

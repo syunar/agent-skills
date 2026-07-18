@@ -3,8 +3,18 @@ set -euo pipefail
 
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
+additional_context=
+if [[ ${1:-} == --additional-context ]]; then
+  if [[ $# -lt 2 || -z $2 ]]; then
+    printf 'Usage: %s [--additional-context <text>] <github-issue-url>\n' "$0" >&2
+    exit 2
+  fi
+  additional_context=$2
+  shift 2
+fi
+
 if [[ $# -ne 1 ]]; then
-  printf 'Usage: %s <github-issue-url>\n' "$0" >&2
+  printf 'Usage: %s [--additional-context <text>] <github-issue-url>\n' "$0" >&2
   exit 2
 fi
 
@@ -71,6 +81,10 @@ Run \`/implement ${plan_path}\`.
 Do not create files, narrate your work, add a preamble, wrap the plan in a Markdown code fence, or emit file-citation markers. The response is copied directly to disk.
 EOF
 )
+
+if [[ -n $additional_context ]]; then
+  prompt+=$(printf '\n\nAdditional context:\n%s' "$additional_context")
+fi
 
 request=$(jq -n \
   --arg model "$SUPERVISOR_MODEL" \
