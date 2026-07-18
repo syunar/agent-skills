@@ -708,7 +708,6 @@ test_review_helper_posts_without_heading_contract() {
   run_case() {
     local content=$1
     local expected_post=$2
-    local removed_prefix=${3:-}
     local worktree="$temporary_root/helper-review-contract-$case_number"
     local body_capture="$temporary_root/helper-review-contract-body-$case_number.txt"
     local response
@@ -738,21 +737,18 @@ test_review_helper_posts_without_heading_contract() {
       fail "every non-empty review should be posted"
     fi
     posted_body=$(<"$body_capture")
-    assert_contains \
-      "$posted_body" \
+    assert_equal \
       "$expected_post" \
-      "posted review should preserve content after best-effort prefix cleanup"
-    if [[ -n $removed_prefix ]]; then
-      assert_not_contains \
-        "$posted_body" \
-        "$removed_prefix" \
-        "posted review should remove the exact malformed prefix"
-    fi
+      "${posted_body%%$'\n\n---\n'*}" \
+      "posted review should exactly preserve content after best-effort prefix cleanup"
   }
 
-  run_case '","start_line":4350,"num"# Findings' '# Findings' 'start_line'
-  run_case $'\",\"start_line\":4350,\"num\"\n# Findings\n\nReview.' $'# Findings\n\nReview.' 'start_line'
-  run_case $'# Findings\n\n{"start_line":4350,"num":1}' '{"start_line":4350,"num":1}'
+  run_case '","start_line":4350,"num"# Findings' '# Findings'
+  run_case $'\",\"start_line\":4350,\"num\"\n# Findings\n\nReview.' $'# Findings\n\nReview.'
+  run_case '","start_line":4350,"num"## [P1] Finding' '## [P1] Finding'
+  run_case '","start_line":4350,"num"### Findings' '### Findings'
+  run_case $'"start_line" is handled correctly here.\n\n## Finding' $'"start_line" is handled correctly here.\n\n## Finding'
+  run_case $'# Findings\n\n{"start_line":4350,"num":1}' $'# Findings\n\n{"start_line":4350,"num":1}'
   run_case 'No findings.' 'No findings.'
   run_case '{}' '{}'
 

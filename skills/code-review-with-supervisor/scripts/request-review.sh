@@ -209,9 +209,9 @@ else
   # us an unambiguous boundary. Never discard an expensive review response.
   first_line=$(awk 'NF { print; exit }' "$review_path")
   review_to_post=
-  if [[ $first_line =~ ^[[:space:]\"{},:]*\"(start_line|end_line|original_line|num_lines|num)\" ]]; then
+  if [[ $first_line =~ ^[[:space:]\"{}:]*,\"(start_line|end_line|original_line|num_lines|num)\" ]]; then
     review_to_post=$(awk '
-      !found && match($0, /#[[:space:]]+[[:alnum:]][^#]*$/) { found = 1; $0 = substr($0, RSTART) }
+      !found && match($0, /#+[[:space:]]+[^[:space:]]/) { found = 1; $0 = substr($0, RSTART) }
       found { print }
     ' "$review_path")
   fi
