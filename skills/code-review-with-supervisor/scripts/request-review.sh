@@ -4,31 +4,10 @@ set -euo pipefail
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
 no_post=false
-additional_context=
-while [[ ${1:-} == --* ]]; do
-  case $1 in
-    --no-post)
-      if [[ $no_post == true ]]; then
-        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
-        exit 2
-      fi
-      no_post=true
-      shift
-      ;;
-    --additional-context)
-      if [[ -n $additional_context || $# -lt 2 || -z $2 || $2 == --* ]]; then
-        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
-        exit 2
-      fi
-      additional_context=$2
-      shift 2
-      ;;
-    *)
-      printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
-      exit 2
-      ;;
-  esac
-done
+if [[ ${1:-} == --no-post ]]; then
+  no_post=true
+  shift
+fi
 
 case $# in
   1)
@@ -44,7 +23,7 @@ case $# in
     fi
     ;;
   *)
-    printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    printf 'Usage: %s [--no-post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -127,7 +106,7 @@ Use the GitHub plugin to inspect the repositories, current code, complete pull-r
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review as plain Markdown text without any JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
 else
@@ -144,13 +123,9 @@ Use the GitHub plugin to inspect the repository, current code, complete pull-req
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review as plain Markdown text without any JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, or emit file-citation markers.
 EOF
 )
-fi
-
-if [[ -n $additional_context ]]; then
-  prompt+=$(printf '\n\nAdditional context:\n%s' "$additional_context")
 fi
 
 request=$(jq -n \
@@ -196,51 +171,43 @@ trap - EXIT
 
 review=$(cat "$review_path"; printf x)
 review=${review%x}
-review=${review%$'\n'}
+while [[ $review == *$'\n' ]]; do
+  review=${review%$'\n'}
+done
 
 if [[ $no_post == true ]]; then
   printf 'PR review post: skipped (--no-post)\n' >&2
 elif [[ $gh_available != true ]]; then
   printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
 else
-  # Sanitize for posting: strip leading non-Markdown artifacts (JSON,
-  # structured metadata). Preserve raw file verbatim.
-  # Accept heading-first or paragraph-first Markdown. Then validate
-  # the complete body for remaining structured patterns.
-  review_to_post=$(printf '%s' "$review" | awk '
-    {
-      if (!found) {
-        if (/^[[:space:]]*$/) next
-        pos = match($0, /#+[[:space:]]/)
-        if (pos > 0) { $0 = substr($0, pos); gsub(/["}]+$/, "", $0); found = 1; if (length > 0) print; next }
-        if ($0 ~ /^[[:alnum:]#*>\-[`\[]/) { found = 1; print; next }
-        exit 1
-      }
-      print
-    }
-  ' || true)
+  # Best effort only: remove a malformed prefix when a Markdown heading gives
+  # us an unambiguous boundary. Never discard an expensive review response.
+  first_line=$(awk 'NF { print; exit }' "$review_path")
+  review_to_post=
+  if [[ $first_line != '#'* && $first_line == *[\"{},:\[]* ]]; then
+    review_to_post=$(awk '
+      !found && match($0, /#[[:space:]]+[[:alnum:]][^#]*$/) { found = 1; $0 = substr($0, RSTART) }
+      found { print }
+    ' "$review_path")
+  fi
   if [[ -z $review_to_post ]]; then
-    printf 'Warning: supervisor response not valid Markdown; skipping post\n' >&2
-  elif grep -qE \
-    '(start_line|end_line|original_line|num_lines)[[:space:]]*[:=][[:space:]]*[0-9]|"[a-z_]+"[[:space:]]*:' \
-    <<< "$review_to_post"; then
-    printf 'Warning: supervisor response contains structured metadata; skipping post\n' >&2
+    review_to_post=$review
+  fi
+
+  if post_error=$(
+    printf '%s\n\n---\n*Full review saved to: `%s`*' \
+      "$review_to_post" \
+      "$review_path" |
+    gh pr review "$pull_request_url" \
+      --comment \
+      --body-file - \
+      2>&1
+  ); then
+    printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
   else
-    if post_error=$(
-      printf '%s\n\n---\n*Full review saved to: `%s`*' \
-        "$review_to_post" \
-        "$review_path" |
-      gh pr review "$pull_request_url" \
-        --comment \
-        --body-file - \
-        2>&1
-    ); then
-      printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
-    else
-      printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
-        "$review_path" >&2
-      printf '%s\n' "$post_error" >&2
-    fi
+    printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
+      "$review_path" >&2
+    printf '%s\n' "$post_error" >&2
   fi
 fi
 
