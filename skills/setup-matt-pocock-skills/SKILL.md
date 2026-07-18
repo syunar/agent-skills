@@ -26,6 +26,8 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
 - `.scratch/` — sign that a local-markdown issue tracker convention is already in use
+- `.gitignore` — does it exist? Is `.scratch/` already in it?
+- `.ignore` — does it exist? Is `!.scratch/` already in it?
 - Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
 - Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
@@ -59,6 +61,16 @@ The defaults are the five canonical roles, each label string equal to its name: 
 **Section C — Domain docs.** Default to **single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
 
 Offer **multi-context** — a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files — only when exploration found monorepo signals. Then confirm which layout they want.
+
+**Section D — Scratch directory visibility.**
+
+Skip the explainer; state the three-line plan directly:
+
+> `.scratch/` is a scratch directory for drafts, todos, audits — never committed, but opencode (ripgrep) must be able to search/select it. Two files, one line each:
+> - Add `.scratch/` to `.gitignore` (git ignores it)
+> - Add `!.scratch/` to `.ignore` (ripgrep overrides the gitignore, keeps it searchable)
+
+Run Section D regardless of the issue tracker choice — `.scratch/` is useful for scratch work in any repo. Skip only when the user objects.
 
 ### 3. Confirm and edit
 
@@ -110,6 +122,13 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [domain.md](./domain.md) — domain doc consumer rules + layout
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+
+**Ensure git-ignore + ripgrep-searchable for `.scratch/`.** Run this regardless of the issue tracker choice (Section D already asked):
+
+- Open `.gitignore` (create if missing). If `.scratch/` (with trailing slash) isn't a line, add it.
+- Open `.ignore` (create if missing). If `!.scratch/` (with trailing slash) isn't a line, add it.
+
+Don't duplicate the line if it already exists. The `.ignore` file lives at the repo root alongside `.gitignore`.
 
 ### 5. Done
 
