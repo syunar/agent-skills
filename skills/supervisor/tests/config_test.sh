@@ -402,6 +402,10 @@ if [[ $1 == "pr" && $2 == "review" ]]; then
         printf '%s' "$2" >"$body_capture"
         break
       fi
+      if [[ $1 == "--body-file" && ${2:-} == "-" ]]; then
+        cat >"$body_capture"
+        break
+      fi
       shift
     done
   fi
@@ -670,9 +674,9 @@ test_review_helper_preserves_whitespace() {
   raw_body=${raw_body%x}
 
   assert_equal \
-    $'  \n\n# Code Review\n\nNo findings.\n\n\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
+    $'# Code Review\n\nNo findings.\n\n---\n*Full review saved to: `.scratch/whitespace-review-pr/reviews/pr-99-code-review.md`*' \
     "$raw_body" \
-    "posted body should preserve leading whitespace and trailing newlines plus footer"
+    "posted body should have leading non-Markdown artifacts stripped and preserve trailing newlines plus footer"
 
   pass "review helper preserves trailing newlines in file and posted body"
 }

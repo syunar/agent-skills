@@ -127,7 +127,7 @@ Use the GitHub plugin to inspect the repositories, current code, complete pull-r
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without any JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
 EOF
 )
 else
@@ -144,7 +144,7 @@ Use the GitHub plugin to inspect the repository, current code, complete pull-req
 The caller will save the result to:
 ${review_path}
 
-Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
+Return only the final code-review as plain Markdown text without any JSON, YAML, HTML, code fences, structured data, or non-Markdown content. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
 EOF
 )
 fi
@@ -203,22 +203,44 @@ if [[ $no_post == true ]]; then
 elif [[ $gh_available != true ]]; then
   printf 'Warning: gh is not installed; review saved locally but was not posted\n' >&2
 else
-  printf -v posted_review \
-    '%s\n\n---\n*Full review saved to: `%s`*' \
-    "$review" \
-    "$review_path"
-
-  if post_error=$(
-    gh pr review "$pull_request_url" \
-      --comment \
-      --body "$posted_review" \
-      2>&1
-  ); then
-    printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
+  # Sanitize for posting: strip leading non-Markdown artifacts (JSON,
+  # structured metadata). Preserve raw file verbatim.
+  # Accept heading-first or paragraph-first Markdown. Then validate
+  # the complete body for remaining structured patterns.
+  review_to_post=$(printf '%s' "$review" | awk '
+    {
+      if (!found) {
+        if (/^[[:space:]]*$/) next
+        pos = match($0, /#+[[:space:]]/)
+        if (pos > 0) { $0 = substr($0, pos); gsub(/["}]+$/, "", $0); found = 1; if (length > 0) print; next }
+        if ($0 ~ /^[[:alnum:]#*>\-[`\[]/) { found = 1; print; next }
+        exit 1
+      }
+      print
+    }
+  ' || true)
+  if [[ -z $review_to_post ]]; then
+    printf 'Warning: supervisor response not valid Markdown; skipping post\n' >&2
+  elif grep -qE \
+    '(start_line|end_line|original_line|num_lines)[[:space:]]*[:=][[:space:]]*[0-9]|"[a-z_]+"[[:space:]]*:' \
+    <<< "$review_to_post"; then
+    printf 'Warning: supervisor response contains structured metadata; skipping post\n' >&2
   else
-    printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
-      "$review_path" >&2
-    printf '%s\n' "$post_error" >&2
+    if post_error=$(
+      printf '%s\n\n---\n*Full review saved to: `%s`*' \
+        "$review_to_post" \
+        "$review_path" |
+      gh pr review "$pull_request_url" \
+        --comment \
+        --body-file - \
+        2>&1
+    ); then
+      printf 'PR review post: posted to %s\n' "$pull_request_url" >&2
+    else
+      printf 'Warning: failed to post PR review; local artifact remains at %s\n' \
+        "$review_path" >&2
+      printf '%s\n' "$post_error" >&2
+    fi
   fi
 fi
 
