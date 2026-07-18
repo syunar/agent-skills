@@ -207,11 +207,18 @@ elif [[ $gh_available != true ]]; then
 else
   # Best effort only: remove a malformed prefix when a Markdown heading gives
   # us an unambiguous boundary. Never discard an expensive review response.
-  first_line=$(awk 'NF { print; exit }' "$review_path")
+  first_line=
+  while IFS= read -r line; do
+    if [[ -n ${line//[[:space:]]/} ]]; then
+      first_line=$line
+      break
+    fi
+  done <"$review_path"
+
   review_to_post=
   leak_prefix='","start_line":[0-9]+,"(num|num_lines)"'
-  if [[ $first_line =~ ^${leak_prefix}([[:space:]]*$|[[:space:]]{0,3}#{1,6}[[:space:]]+) ]]; then
-    review_to_post=$(awk '
+  if [[ $first_line =~ ^${leak_prefix}([[:space:]]*$|[[:space:]]{0,3}#{1,6}[[:space:]]+) ]] &&
+    cleaned_review=$(awk '
       function heading(line, marker, indent) {
         if (line ~ /["},][[:space:]]*$/) return 0
         match(line, /^[ ]*#+[[:space:]]+/)
@@ -235,7 +242,8 @@ else
       recognized && !found { invalid = 1; next }
       found { print }
       END { if (invalid || !found) exit 1 }
-    ' "$review_path" || true)
+    ' "$review_path"); then
+    review_to_post=$cleaned_review
   fi
   if [[ -z $review_to_post ]]; then
     review_to_post=$review

@@ -416,6 +416,18 @@ printf 'Unexpected gh arguments: %s\n' "$*" >&2
 exit 64
 EOF
 
+  cat >"$mock_bin/awk" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ ${MOCK_AWK_FAIL:-0} == 1 ]]; then
+  printf '%s' "${MOCK_AWK_PARTIAL:-}"
+  exit 1
+fi
+
+exec /usr/bin/awk "$@"
+EOF
+
   cat >"$mock_bin/curl" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -432,6 +444,7 @@ EOF
   chmod +x \
     "$mock_bin/opencode" \
     "$mock_bin/gh" \
+    "$mock_bin/awk" \
     "$mock_bin/curl"
 }
 
@@ -708,6 +721,8 @@ test_review_helper_posts_without_heading_contract() {
   run_case() {
     local content=$1
     local expected_post=$2
+    local awk_fail=${3:-0}
+    local awk_partial=${4:-}
     local worktree="$temporary_root/helper-review-contract-$case_number"
     local body_capture="$temporary_root/helper-review-contract-body-$case_number.txt"
     local response
@@ -722,6 +737,8 @@ test_review_helper_posts_without_heading_contract() {
       MOCK_OPENCODE_CONFIG="$fixture" \
       MOCK_PR_TITLE="Contract Review $case_number" \
       MOCK_PR_REVIEW_BODY_CAPTURE="$body_capture" \
+      MOCK_AWK_FAIL="$awk_fail" \
+      MOCK_AWK_PARTIAL="$awk_partial" \
       MOCK_CURL_CAPTURE="$curl_capture" \
       MOCK_CURL_RESPONSE="$response" \
         "$bash_bin" "$review_script" \
@@ -757,6 +774,8 @@ test_review_helper_posts_without_heading_contract() {
   run_case $'# Findings\n\n{"start_line":4350,"num":1}' $'# Findings\n\n{"start_line":4350,"num":1}'
   run_case 'No findings.' 'No findings.'
   run_case '{}' '{}'
+  run_case '","start_line":4350,"num"# Findings' '","start_line":4350,"num"# Findings' 1
+  run_case '","start_line":4350,"num"# Findings' '","start_line":4350,"num"# Findings' 1 'partial'
 
   pass "review helper posts without a heading contract"
 }
