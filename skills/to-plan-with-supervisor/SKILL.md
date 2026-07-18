@@ -61,14 +61,23 @@ Run the bundled helper from the repository root:
 bash skills/to-plan-with-supervisor/scripts/request-plan.sh '<ticket-url>'
 ```
 
+To append situational guidance without replacing the core planning prompt:
+
+```bash
+bash skills/to-plan-with-supervisor/scripts/request-plan.sh --additional-context '<text>' '<ticket-url>'
+```
+
+`--additional-context` must precede the ticket URL and requires non-empty inline text.
+
 The helper:
 
-1. Resolves the ticket title and derives `.scratch/<ticket-slug>/plans/<ticket-number>-<ticket-slug>.md`, adding a numeric run suffix when needed to preserve existing plans.
-2. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
-3. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@to-plan.md`, the ticket URL, owner/repo, and exact destination path to that configured supervisor.
-4. Waits up to 30 minutes for a non-streaming response.
-5. Saves the complete supervisor response verbatim.
-6. Atomically writes the plan without overwriting an existing file.
+1. Parses the optional `--additional-context <text>` flag.
+2. Resolves the ticket title and derives `.scratch/<ticket-slug>/plans/<ticket-number>-<ticket-slug>.md`, adding a numeric run suffix when needed to preserve existing plans.
+3. Prints the start time, API URL, masked API key, model, destination path, input prompt, and request time.
+4. Reads the shared supervisor URL, API key, and model from merged OpenCode configuration, then sends `@to-plan.md`, the ticket URL, owner/repo, exact destination path, and any additional context to that configured supervisor.
+5. Waits up to 30 minutes for a non-streaming response.
+6. Saves the complete supervisor response verbatim.
+7. Atomically writes the plan without overwriting an existing file.
 
 If the API request or response extraction fails, report its error and leave the filesystem unchanged. Do not replace the supervisor response with a locally authored plan.
 

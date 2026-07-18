@@ -4,10 +4,31 @@ set -euo pipefail
 printf 'Start time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')" >&2
 
 no_post=false
-if [[ ${1:-} == --no-post ]]; then
-  no_post=true
-  shift
-fi
+additional_context=
+while [[ ${1:-} == --* ]]; do
+  case $1 in
+    --no-post)
+      if [[ $no_post == true ]]; then
+        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+        exit 2
+      fi
+      no_post=true
+      shift
+      ;;
+    --additional-context)
+      if [[ -n $additional_context || $# -lt 2 || -z $2 || $2 == --* ]]; then
+        printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+        exit 2
+      fi
+      additional_context=$2
+      shift 2
+      ;;
+    *)
+      printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+      exit 2
+      ;;
+  esac
+done
 
 case $# in
   1)
@@ -23,7 +44,7 @@ case $# in
     fi
     ;;
   *)
-    printf 'Usage: %s [--no-post] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
+    printf 'Usage: %s [--no-post] [--additional-context <text>] [<github-issue-url>] <github-pull-request-url>\n' "$0" >&2
     exit 2
     ;;
 esac
@@ -126,6 +147,10 @@ ${review_path}
 Return only the final code-review Markdown as text, ready to copy directly to disk. Lead with findings ordered by severity and include exact file and line references. If there are no findings, state that explicitly and identify residual risks or testing gaps. Do not create files, narrate your work, add a preamble, wrap the review in a Markdown code fence, or emit file-citation markers.
 EOF
 )
+fi
+
+if [[ -n $additional_context ]]; then
+  prompt+=$(printf '\n\nAdditional context:\n%s' "$additional_context")
 fi
 
 request=$(jq -n \
